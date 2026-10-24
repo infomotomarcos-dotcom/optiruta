@@ -45,16 +45,13 @@ if st.session_state.perfil == "Inicio":
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 OptiRuta Delivery</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size:18px;'>Bienvenido al Centro de Control de Repartos</p>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888;'>Selecciona tu perfil de acceso para continuar:</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
     col_btn1, col_btn2 = st.columns(2)
-    
     with col_btn1:
         if st.button("🏢 Emprendedores / Clientes", use_container_width=True, type="primary"):
             st.session_state.perfil = "Emprendedores"
             st.rerun()
-            
     with col_btn2:
         if st.button("🏍️ Conductores / Repartidores", use_container_width=True, type="secondary"):
             st.session_state.perfil = "Conductores"
@@ -69,7 +66,6 @@ elif st.session_state.perfil == "Emprendedores":
         st.rerun()
         
     st.markdown("<h2 style='color: #FF4B4B;'>🏢 Panel de Emprendedores y Clientes</h2>", unsafe_allow_html=True)
-    
     p_carga, p_admin = st.tabs(["📥 CARGAR NUEVO ENVÍO", "🔒 ACCESO PRIVADO LOCAL"])
     
     with p_carga:
@@ -79,7 +75,7 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe el paquete *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido o descripción del paquete *")
-            monto = st.number_input("Monto TOTAL neto a cobrar al cliente final ($) - (Pon 0 si ya está pagado) *", min_value=0.0, step=1.0)
+            monto = st.number_input("Monto TOTAL neto a cobrar al cliente final ($) *", min_value=0.0, step=1.0)
             pago = st.selectbox("¿Cómo pagará el destinatario al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud de Reparto", use_container_width=True)
             
@@ -96,14 +92,58 @@ elif st.session_state.perfil == "Emprendedores":
         if clave == CONTRASEÑA_LOCAL:
             st.success("Acceso Autorizado")
             st.markdown("---")
+            
+            # 🗃️ SECCIÓN DEL NUEVO BOTÓN DE CIERRE DE CAJA MATEMÁTICO 🗃️
+            st.markdown("### 🧮 Módulo de Cierre de Caja Diaria")
+            
+            # Inputs dinámicos para configurar tus costos de flete por zona/viaje
+            col_cfg1, col_cfg2 = st.columns(2)
+            costo_envio_fijo = col_cfg1.number_input("Establecer pago base por envío al delivery ($):", min_value=0.0, value=15.0, step=1.0)
+            
+            if st.button("🔏 Ejecutar Cuadre y Cierre de Caja", use_container_width=True, type="primary"):
+                if not df_pedidos.empty:
+                    df_pedidos["Total"] = pd.to_numeric(df_pedidos["Total"], errors='coerce').fillna(0)
+                    # Tomamos únicamente las órdenes que los conductores marcaron como "Entregado"
+                    df_ok = df_pedidos[df_pedidos["Estado"] == "Entregado"]
+                    
+                    # Cálculos de flujos brutos ingresados
+                    total_recaudado = df_ok["Total"].sum()
+                    transferencias = df_ok[df_ok["MetodoPago"].str.contains("Transferencia", na=False)]["Total"].sum()
+                    efectivo = df_ok[df_ok["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum()
+                    
+                    # Cálculo de deudas y nómina
+                    cant_envios_ok = len(df_ok)
+                    pago_total_deliverys = cant_envios_ok * costo_envio_fijo
+                    
+                    # Restas de totales netos finales a entregar a los comercios
+                    total_neto_emprendedores = total_recaudado - pago_total_deliverys
+                    
+                    # Despliegue de los resultados del arqueo numérico en limpio
+                    st.markdown("#### 📝 Reporte de Cierre Consolidado")
+                    st.info(f"📊 **Volumen de Envíos Concluidos:** {cant_envios_ok} entregas.")
+                    
+                    c_c1, c_c2 = st.columns(2)
+                    c_c1.metric("💰 Total Bruto Recaudado", f"${total_recaudado:,.2f}")
+                    c_c1.metric("📱 En Cuenta (Transferencias)", f"${transferencias:,.2f}")
+                    c_c1.metric("💵 En Mano (Efectivo)", f"${efectivo:,.2f}")
+                    
+                    c_c2.metric("🏍️ Nómina Total a Pagar a Deliverys", f"${pago_total_deliverys:,.2f}", delta=f"-${costo_envio_fijo} c/u", delta_color="inverse")
+                    c_c2.metric("🏢 Total Neto a Rendir a Emprendedores", f"${total_neto_emprendedores:,.2f}")
+                    
+                    st.toast("Caja cuadrada de forma exitosa.")
+                else:
+                    st.warning("No hay registros cargados el día de hoy para computar cierres.")
+                    
+            st.markdown("---")
+            st.markdown("### 📋 Monitoreo de Órdenes Activas")
             if df_pedidos.empty:
                 st.info("No hay movimientos registrados hoy.")
             else:
                 for idx, f in df_pedidos.iterrows():
                     with st.container():
-                        col1, col2, col3 = st.columns([1, 2, 2])
+                        col1, col2, col3 = st.columns()
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                        col2.markdown(f"👤 **Cliente:** {f['Cliente']}\n📍 **Destino:** {f['Dirección']}\n📦 {f['Pedido']}")
+                        col2.markdown(f"👤 **Cliente:** {f['Cliente']}\n📍 **Destino:** _{f['Dirección']}_\n📦 {f['Pedido']}")
                         col3.markdown(f"💰 **Total Cobro:** ${f['Total']} (_{f['MetodoPago']}_)")
                         
                         m_elegida = col3.selectbox(f"Asignar Vehículo a #{f['ID']}:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
@@ -119,46 +159,3 @@ elif st.session_state.perfil == "Emprendedores":
                         if num_destino:
                             col3.link_button("📲 Despachar por WhatsApp", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
                         st.markdown("---")
-                        
-                st.markdown("### ⚙️ Control de Turnos Diarios")
-                col_fl1, col_fl2 = st.columns(2)
-                with col_fl1:
-                    st.markdown("**Asignación de Motos**")
-                    with st.form("f_turnos"):
-                        nuevos = {}
-                        for m in MOTOS_FIJAS:
-                            nuevos[m] = st.selectbox(f"¿Quién maneja la {m} hoy?", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()), index=(["Seleccionar..."] + list(CONDUCTORES_DICT.keys())).index(TURNOS_DICT.get(m, "Seleccionar...")) if TURNOS_DICT.get(m, "Seleccionar...") in (["Seleccionar..."] + list(CONDUCTORES_DICT.keys())) else 0)
-                        if st.form_submit_button("🔒 Guardar Turnos de Hoy", use_container_width=True):
-                            requests.post(API_URL, json={"accion": "guardar_turnos", "turnos": nuevos})
-                            st.cache_data.clear()
-                            st.rerun()
-                with col_fl2:
-                    st.markdown("**Registrar Nuevo Chofer**")
-                    with st.form("f_chofer", clear_on_submit=True):
-                        n_nom = st.text_input("Nombre Completo")
-                        n_tel = st.text_input("WhatsApp (ej: 549...)")
-                        if st.form_submit_button("Agregar Chofer"):
-                            requests.post(API_URL, json={"accion": "crear_conductor", "Nombre": n_nom, "Telefono": n_tel})
-                            st.cache_data.clear()
-                            st.rerun()
-        elif clave != "":
-            st.error("Clave incorrecta. Acceso denegado.")
-
-# =========================================================
-# VISTA: CONDUCTORES (Máxima privacidad de costos)
-# =========================================================
-elif st.session_state.perfil == "Conductores":
-    if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "Inicio"
-        st.rerun()
-        
-    st.markdown("<h2 style='color: #10B981;'>🏍️ Acceso de Conductores</h2>", unsafe_allow_html=True)
-    chofer = st.selectbox("Selecciona tu nombre de Conductor:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
-    
-    if chofer != "Seleccionar...":
-        m_hoy = [m for m, c in TURNOS_DICT.items() if c == chofer]
-        if not m_hoy:
-            st.warning("⚠️ No tienes ninguna moto asignada el día de hoy. Solicita tu asignación en la base.")
-        else:
-            moto_str = m_hoy if isinstance(m_hoy, list) else m_hoy
-            df_m = df_pedidos[(df_pedidos["Repartidor"] == moto_str) & (df_pedidos["Estado"].isin(["Pendiente", "En Ruta"]))]
