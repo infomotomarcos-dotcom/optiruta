@@ -4,7 +4,6 @@ import requests
 import urllib.parse
 from datetime import datetime
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="OptiRuta Delivery", page_icon="🚀", layout="wide")
 
 API_URL = "https://google.com"
@@ -17,27 +16,14 @@ def obtener_datos_sistema():
         response = requests.get(API_URL)
         if response.status_code == 200:
             data = response.json()
-            df_p = pd.DataFrame(data.get("pedidos", []))
-            df_c = pd.DataFrame(data.get("conductores", []))
-            df_t = pd.DataFrame(data.get("turnos_hoy", []))
-            return df_p, df_c, df_t
+            return pd.DataFrame(data.get("pedidos", [])), pd.DataFrame(data.get("conductores", [])), pd.DataFrame(data.get("turnos_hoy", []))
     except:
         pass
-    
-    df_c_mock = pd.DataFrame([
-        {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
-        {"Nombre": "Carlos Gómez", "Telefono": "595982222222"},
-        {"Nombre": "Luis Rodríguez", "Telefono": "595983333333"}
-    ])
-    df_t_mock = pd.DataFrame([
-        {"Moto": "Moto 1", "Conductor": "Juan Pérez"},
-        {"Moto": "Moto 2", "Conductor": "Carlos Gómez"},
-        {"Moto": "Moto 3", "Conductor": "Luis Rodríguez"}
-    ])
+    df_c_mock = pd.DataFrame([{"Nombre": "Juan Pérez", "Telefono": "595981111111"},{"Nombre": "Carlos Gómez", "Telefono": "595982222222"}])
+    df_t_mock = pd.DataFrame([{"Moto": "Moto 1", "Conductor": "Juan Pérez"},{"Moto": "Moto 2", "Conductor": "Carlos Gómez"},{"Moto": "Moto 3", "Conductor": "Sin Asignar"}])
     return pd.DataFrame(), df_c_mock, df_t_mock
 
 df_pedidos, df_conductores, df_turnos = obtener_datos_sistema()
-
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str))) if not df_conductores.empty else {}
 TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str))) if not df_turnos.empty else {}
 
@@ -46,149 +32,88 @@ for col in columnas_base:
     if df_pedidos.empty or col not in df_pedidos.columns:
         df_pedidos[col] = None
 
-pestana_cliente, pestana_moto, pestana_local, pestana_flota = st.tabs([
-    "📦 PORTAL CLIENTES", 
-    "🏍️ ACCESO REPARTIDORES", 
-    "🏢 CONTROL CENTRAL",
-    "⚙️ CONTROL DE TURNOS Y FLOTA"
-])
+p_cliente, p_moto, p_local, p_flota = st.tabs(["📦 PORTAL CLIENTES", "🏍️ ACCESO REPARTIDORES", "🏢 CONTROL CENTRAL", "⚙️ TURNOS Y FLOTA"])
 
-# 1. PORTAL DE CLIENTES
-with pestana_cliente:
-    st.markdown("<h2 style='color: #FF4B4B; text-align: center;'>Formulario de Envío - OptiRuta</h2>", unsafe_allow_html=True)
-    with st.form("formulario_cliente_directo", clear_on_submit=True):
-        col_c1, col_c2 = st.columns(2)
-        with col_c1:
-            cliente_nombre = st.text_input("Tu Nombre / Negocio *")
-            cliente_telefono = st.text_input("Tu Teléfono *")
-        with col_c2:
-            destinatario_nombre = st.text_input("Quién recibe el paquete *")
-            direccion_entrega = st.text_input("Dirección de Entrega *")
-            
-        detalles_paquete = st.text_area("¿Qué contiene el paquete? *")
-        col_p1, col_p2 = st.columns(2)
-        with col_p1:
-            monto_cobro = st.number_input("Monto a cobrar en destino ($)", min_value=0.0, step=1.0)
-        with col_p2:
-            pago_esperado = st.selectbox("¿Cómo pagará el destinatario al llegar? *", METODOS_PAGO)
-        
-        boton_cliente = st.form_submit_button("🚀 Solicitar Envío", use_container_width=True)
-        
-    if boton_cliente and cliente_nombre and direccion_entrega and detalles_paquete:
-        hora_solicitud = datetime.now().strftime("%H:%M")
-        nuevo_id = len(df_pedidos) + 1 if not df_pedidos.empty else 1
-        payload = {
-            "accion": "crear", "ID": nuevo_id, 
-            "Cliente": f"{cliente_nombre} (Tel: {cliente_telefono})",
-            "Dirección": direccion_entrega, "Pedido": f"Para: {destinatario_nombre} - {detalles_paquete}",
-            "Total": monto_cobro, "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": hora_solicitud,
-            "MetodoPago": pago_esperado
-        }
+with p_cliente:
+    st.markdown("### Formulario de Envío - OptiRuta")
+    with st.form("f_cliente", clear_on_submit=True):
+        c_nom = st.text_input("Tu Nombre / Negocio *")
+        c_tel = st.text_input("Tu Teléfono *")
+        d_nom = st.text_input("Quién recibe *")
+        d_dir = st.text_input("Dirección de Entrega *")
+        detalles = st.text_area("Contenido del paquete *")
+        monto = st.number_input("Monto a cobrar ($)", min_value=0.0, step=1.0)
+        pago = st.selectbox("Método de pago al llegar", METODOS_PAGO)
+        enviar = st.form_submit_button("🚀 Solicitar Envío", use_container_width=True)
+    if enviar and c_nom and d_dir and detalles:
+        payload = {"accion": "crear", "ID": len(df_pedidos)+1, "Cliente": f"{c_nom} ({c_tel})", "Dirección": d_dir, "Pedido": f"Para: {d_nom} - {detalles}", "Total": monto, "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": datetime.now().strftime("%H:%M"), "MetodoPago": pago}
         requests.post(API_URL, json=payload)
         st.success("¡Envío registrado!")
         st.cache_data.clear()
 
-# 2. VISTA REPARTIDORES
-with pestana_moto:
-    st.markdown("<h2 style='color: #10B981;'>🏍️ Mis Entregas del Día</h2>", unsafe_allow_html=True)
-    chofer_identidad = st.selectbox("Selecciona tu nombre de Conductor:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
-    
-    if chofer_identidad != "Seleccionar...":
-        moto_asignada_hoy = [moto for moto, chofer in TURNOS_DICT.items() if chofer == chofer_identidad]
-        
-        if not moto_asignada_hoy:
-            st.warning("⚠️ No tienes ninguna moto asignada el día de hoy.")
+with p_moto:
+    st.markdown("### 🏍️ Mis Entregas")
+    chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
+    if chofer != "Seleccionar...":
+        m_hoy = [m for m, c in TURNOS_DICT.items() if c == chofer]
+        if not m_hoy:
+            st.warning("No tienes moto asignada hoy.")
         else:
-            mi_moto = moto_asignada_hoy[0]
-            st.info(f"📋 Conductor: **{chofer_identidad}** | Vehículo Asignado Hoy: **{mi_moto}**")
-            
-            df_moto_filtrado = df_pedidos[(df_pedidos["Repartidor"] == mi_moto) & (df_pedidos["Estado"].isin(["Pendiente", "En Ruta"]))]
-            
-            if df_moto_filtrado.empty:
-                st.success("¡Felicidades! No tienes entregas pendientes.")
-            else:
-                for index, fila in df_moto_filtrado.iterrows():
-                    id_p = fila.get("ID")
-                    dom = fila.get("Dirección")
-                    det = fila.get("Pedido")
-                    tot = fila.get("Total")
-                    est = fila.get("Estado")
-                    pago_original = fila.get("MetodoPago", "Efectivo")
-                    
-                    with st.container():
-                        col_m1, col_m2 = st.columns()
-                        with col_m1:
-                            st.markdown(f"### 📍 Orden #{id_p} (`{est}`)")
-                            st.markdown(f"**Dirección:** {dom}")
-                            st.markdown(f"**Detalles:** {det}")
-                            st.markdown(f"💰 **MONTO A COBRAR:** `${tot}`")
-                            st.markdown(f"💳 **Método solicitado:** *{pago_original}*")
-                        with col_m2:
-                            st.write("")
-                            pago_real = st.selectbox(f"Confirmar método recibido #{id_p}:", METODOS_PAGO, index=METODOS_PAGO.index(pago_original) if pago_original in METODOS_PAGO else 0)
-                            
-                            if st.button("✅ Confirmar Entrega", key=f"entregado_{id_p}", use_container_width=True):
-                                payload_moto = {"accion": "actualizar_entrega_moto", "id": id_p, "estado": "Entregado", "metodo_real": pago_real}
-                                requests.post(API_URL, json=payload_moto)
-                                st.toast("¡Orden completada!")
-                                st.cache_data.clear()
-                                st.rerun()
-                        st.markdown("<hr style='border-top: 1px dotted #10B981;'>", unsafe_allow_html=True)
+            df_m = df_pedidos[(df_pedidos["Repartidor"] == m_hoy[0]) & (df_pedidos["Estado"].isin(["Pendiente", "En Ruta"]))]
+            if df_m.empty:
+                st.success("¡Sin pendientes!")
+            for idx, f in df_m.iterrows():
+                st.markdown(f"**Orden #{f['ID']}** | Dirección: {f['Dirección']} | Cobrar: ${f['Total']} ({f['MetodoPago']})")
+                if st.button(f"✅ Marcar Entregado #{f['ID']}", use_container_width=True):
+                    requests.post(API_URL, json={"accion": "actualizar_entrega_moto", "id": f['ID'], "estado": "Entregado", "metodo_real": f['MetodoPago']})
+                    st.cache_data.clear()
+                    st.rerun()
 
-# 3. PANEL DEL LOCAL
-with pestana_local:
-    st.markdown("<h2 style='color: #1E3A8A;'>🏢 Consola de Despacho Central</h2>", unsafe_allow_html=True)
-    
-    if not df_pedidos.empty:
-        df_pedidos["Total"] = pd.to_numeric(df_pedidos["Total"], errors='coerce').fillna(0)
-        df_entregados = df_pedidos[df_pedidos["Estado"] == "Entregado"]
-        
-        efectivo_total = df_entregados[df_entregados["MetodoPago"].str.contains("Efectivo", na=False) & ~df_entregados["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
-        transfe_total = df_entregados[df_entregados["MetodoPago"].str.contains("Transferencia", na=False) & ~df_entregados["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
-        mixto_total = df_entregados[df_entregados["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
-        caja_total = df_entregados["Total"].sum()
-        
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        col_m1.metric("💵 Total Efectivo", f"${efectivo_total:,.2f}")
-        col_m2.metric("📱 Total Transferencias", f"${transfe_total:,.2f}")
-        col_m3.metric("🔀 Total Mixto", f"${mixto_total:,.2f}")
-        col_m4.metric("💰 CAJA GENERAL TOTAL", f"${caja_total:,.2f}")
-    
-    st.markdown("---")
-    
+with p_local:
+    st.markdown("### 🏢 Consola de Despacho")
     if df_pedidos.empty:
-        st.info("No hay movimientos registrados.")
+        st.info("No hay movimientos.")
     else:
-        opciones_motos = ["Sin Asignar"] + MOTOS_FIJAS
-        for index, fila in df_pedidos.iterrows():
-            id_p = fila.get("ID")
-            cli = fila.get("Cliente")
-            dom = fila.get("Dirección")
-            det = fila.get("Pedido")
-            tot = fila.get("Total")
-            rep = fila.get("Repartidor")
-            est = fila.get("Estado")
-            pago = fila.get("MetodoPago", "Efectivo")
-            
-            chofer_actual = TURNOS_DICT.get(rep, "Nadie asignado")
-            
+        for idx, f in df_pedidos.iterrows():
             with st.container():
-                c1, c2, c3, c4 = st.columns()
-                with c1:
-                    st.markdown(f"### `#{id_p}`")
-                    st.caption(f"⏱️ {fila.get('Hora', '')}")
-                    if rep != "Sin Asignar":
-                        st.markdown(f"👤 Conductor: **{chofer_actual}**")
-                with c2:
-                    st.markdown(f"👤 **Cliente:** {cli}")
-                    st.markdown(f"📍 **Destino:** _{dom}_")
-                    st.markdown(f"📦 **Contenido:** {det}")
-                with c3:
-                    st.markdown(f"💰 Cobro: **${tot}** (_{pago}_)")
-                    idx_moto = opciones_motos.index(rep) if rep in opciones_motos else 0
-                    moto_elegida = st.selectbox(f"Asignar Vehículo a #{id_p}", opciones_motos, key=f"local_moto_{id_p}", index=idx_moto)
-                    estado_elegido = st.selectbox(f"Estado #{id_p}", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], key=f"local_est_{id_p}", index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(est))
-                with c4:
-                    st.write("")
-                    st.write("")
-                    if st.button("💾 Guardar Cambios", key=f"l_btn_{id_p}", use_container_width=True):
+                col1, col2, col3 = st.columns([1, 3, 2])
+                col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
+                col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}")
+                
+                # Modificación directa sin botón de guardar separado
+                m_elegida = col3.selectbox(f"Moto:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
+                e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
+                
+                if m_elegida != f['Repartidor'] or e_elegido != f['Estado']:
+                    requests.post(API_URL, json={"accion": "actualizar_completo", "id": f['ID'], "repartidor": m_elegida, "estado": e_elegido})
+                    st.cache_data.clear()
+                    st.rerun()
+                
+                txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n📝 *Detalles:* {f['Pedido']}\n💰 *Cobrar:* ${f['Total']} ({f['MetodoPago']})"
+                num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
+                if num_destino:
+                    col3.link_button("📲 Despachar WhatsApp", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
+                st.markdown("---")
+
+with p_flota:
+    st.markdown("### ⚙️ Control de Turnos y Choferes")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Turnos de Hoy**")
+        with st.form("f_turnos"):
+            nuevos = {}
+            for m in MOTOS_FIJAS:
+                nuevos[m] = st.selectbox(f"¿Quién maneja la {m}?", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()), index=(["Seleccionar..."] + list(CONDUCTORES_DICT.keys())).index(TURNOS_DICT.get(m, "Seleccionar...")) if TURNOS_DICT.get(m, "Seleccionar...") in (["Seleccionar..."] + list(CONDUCTORES_DICT.keys())) else 0)
+            if st.form_submit_button("🔒 Guardar Turnos", use_container_width=True):
+                requests.post(API_URL, json={"accion": "guardar_turnos", "turnos": nuevos})
+                st.cache_data.clear()
+                st.rerun()
+    with col2:
+        st.markdown("**Registrar Conductor**")
+        with st.form("f_chofer", clear_on_submit=True):
+            n_nom = st.text_input("Nombre")
+            n_tel = st.text_input("WhatsApp (ej: 549...)")
+            if st.form_submit_button("Agregar Chofer"):
+                requests.post(API_URL, json={"accion": "crear_conductor", "Nombre": n_nom, "Telefono": n_tel})
+                st.cache_data.clear()
+                st.rerun()
