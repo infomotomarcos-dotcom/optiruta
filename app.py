@@ -8,7 +8,7 @@ from datetime import datetime
 st.set_page_config(page_title="OptiRuta Delivery", page_icon="🚀", layout="centered")
 
 API_URL = "https://google.com"
-METODOS_PAGO = ["Efectivo", "Transferencia bancaria / Giros", "Mixto (Efectivo + Transferencia)", "Ya pagado / Sin cobro"]
+METODOS_PAGO = ["Efectivo", "Transferencia", "Mixto (Efectivo + Transferencia)", "Ya pagado / Sin cobro"]
 MOTOS_FIJAS = ["Moto 1", "Moto 2", "Moto 3"]
 CONTRASEÑA_LOCAL = "1234" # <<-- CAMBIA AQUÍ TU CONTRASEÑA PRIVADA DEL LOCAL
 
@@ -44,7 +44,7 @@ if "perfil" not in st.session_state:
 if st.session_state.perfil == "Inicio":
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 OptiRuta Delivery</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size:18px;'>🇵🇾 Sistema de Control de Repartos (Guaraníes)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size:18px;'>Bienvenido al Centro de Control de Repartos</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
     col_btn1, col_btn2 = st.columns(2)
@@ -75,13 +75,12 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe el paquete *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido o descripción del paquete *")
-            # Configurado con paso de 5000 Gs. para mejor experiencia de carga en Paraguay
-            monto = st.number_input("Monto TOTAL neto a cobrar al cliente final (Gs.) - (Pon 0 si ya está pagado) *", min_value=0, step=5000, format="%d")
+            monto = st.number_input("Monto TOTAL neto a cobrar al cliente final ($) *", min_value=0.0, step=1.0)
             pago = st.selectbox("¿Cómo pagará el destinatario al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud de Reparto", use_container_width=True)
             
         if enviar and c_nom and d_dir and detalles:
-            payload = {"accion": "crear", "ID": len(df_pedidos)+1, "Cliente": f"{c_nom} ({c_tel})", "Dirección": d_dir, "Pedido": f"Para: {d_nom} - {detalles}", "Total": int(monto), "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": datetime.now().strftime("%H:%M"), "MetodoPago": pago}
+            payload = {"accion": "crear", "ID": len(df_pedidos)+1, "Cliente": f"{c_nom} ({c_tel})", "Dirección": d_dir, "Pedido": f"Para: {d_nom} - {detalles}", "Total": monto, "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": datetime.now().strftime("%H:%M"), "MetodoPago": pago}
             requests.post(API_URL, json=payload)
             st.success("¡Tu solicitud de envío fue registrada con éxito!")
             st.cache_data.clear()
@@ -94,34 +93,42 @@ elif st.session_state.perfil == "Emprendedores":
             st.success("Acceso Autorizado")
             st.markdown("---")
             
-            st.markdown("### 🧮 Módulo de Cierre de Caja Diaria (PYG)")
+            # 🗃️ SECCIÓN DEL NUEVO BOTÓN DE CIERRE DE CAJA MATEMÁTICO 🗃️
+            st.markdown("### 🧮 Módulo de Cierre de Caja Diaria")
+            
+            # Inputs dinámicos para configurar tus costos de flete por zona/viaje
             col_cfg1, col_cfg2 = st.columns(2)
-            # Costo preconfigurado en 15.000 Gs. (monto típico de delivery base)
-            costo_envio_fijo = col_cfg1.number_input("Establecer pago base por envío al delivery (Gs.):", min_value=0, value=15000, step=1000, format="%d")
+            costo_envio_fijo = col_cfg1.number_input("Establecer pago base por envío al delivery ($):", min_value=0.0, value=15.0, step=1.0)
             
             if st.button("🔏 Ejecutar Cuadre y Cierre de Caja", use_container_width=True, type="primary"):
                 if not df_pedidos.empty:
-                    df_pedidos["Total"] = pd.to_numeric(df_pedidos["Total"], errors='coerce').fillna(0).astype(int)
+                    df_pedidos["Total"] = pd.to_numeric(df_pedidos["Total"], errors='coerce').fillna(0)
+                    # Tomamos únicamente las órdenes que los conductores marcaron como "Entregado"
                     df_ok = df_pedidos[df_pedidos["Estado"] == "Entregado"]
                     
-                    total_recaudado = int(df_ok["Total"].sum())
-                    transferencias = int(df_ok[df_ok["MetodoPago"].str.contains("Transferencia|Giros", na=False)]["Total"].sum())
-                    efectivo = int(df_ok[df_ok["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum())
+                    # Cálculos de flujos brutos ingresados
+                    total_recaudado = df_ok["Total"].sum()
+                    transferencias = df_ok[df_ok["MetodoPago"].str.contains("Transferencia", na=False)]["Total"].sum()
+                    efectivo = df_ok[df_ok["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum()
                     
+                    # Cálculo de deudas y nómina
                     cant_envios_ok = len(df_ok)
-                    pago_total_deliverys = int(cant_envios_ok * costo_envio_fijo)
-                    total_neto_emprendedores = int(total_recaudado - pago_total_deliverys)
+                    pago_total_deliverys = cant_envios_ok * costo_envio_fijo
                     
+                    # Restas de totales netos finales a entregar a los comercios
+                    total_neto_emprendedores = total_recaudado - pago_total_deliverys
+                    
+                    # Despliegue de los resultados del arqueo numérico en limpio
                     st.markdown("#### 📝 Reporte de Cierre Consolidado")
                     st.info(f"📊 **Volumen de Envíos Concluidos:** {cant_envios_ok} entregas.")
                     
                     c_c1, c_c2 = st.columns(2)
-                    c_c1.metric("💰 Total Bruto Recaudado", f"Gs. {total_recaudado:,}")
-                    c_c1.metric("📱 En Cuenta (Transferencias/Giros)", f"Gs. {transferencias:,}")
-                    c_c1.metric("💵 En Mano (Efectivo)", f"Gs. {efectivo:,}")
+                    c_c1.metric("💰 Total Bruto Recaudado", f"${total_recaudado:,.2f}")
+                    c_c1.metric("📱 En Cuenta (Transferencias)", f"${transferencias:,.2f}")
+                    c_c1.metric("💵 En Mano (Efectivo)", f"${efectivo:,.2f}")
                     
-                    c_c2.metric("🏍️ Nómina Total a Pagar a Deliverys", f"Gs. {pago_total_deliverys:,}", delta=f"-Gs. {costo_envio_fijo:,} c/u", delta_color="inverse")
-                    c_c2.metric("🏢 Total Neto a Rendir a Emprendedores", f"Gs. {total_neto_emprendedores:,}")
+                    c_c2.metric("🏍️ Nómina Total a Pagar a Deliverys", f"${pago_total_deliverys:,.2f}", delta=f"-${costo_envio_fijo} c/u", delta_color="inverse")
+                    c_c2.metric("🏢 Total Neto a Rendir a Emprendedores", f"${total_neto_emprendedores:,.2f}")
                     
                     st.toast("Caja cuadrada de forma exitosa.")
                 else:
@@ -137,9 +144,7 @@ elif st.session_state.perfil == "Emprendedores":
                         col1, col2, col3 = st.columns()
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
                         col2.markdown(f"👤 **Cliente:** {f['Cliente']}\n📍 **Destino:** _{f['Dirección']}_\n📦 {f['Pedido']}")
-                        
-                        monto_formateado = int(float(f['Total'])) if f['Total'] is not None else 0
-                        col3.markdown(f"💰 **Total Cobro:** Gs. {monto_formateado:,} (_{f['MetodoPago']}_)")
+                        col3.markdown(f"💰 **Total Cobro:** ${f['Total']} (_{f['MetodoPago']}_)")
                         
                         m_elegida = col3.selectbox(f"Asignar Vehículo a #{f['ID']}:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
                         e_elegido = col3.selectbox(f"Estado de Ruta a #{f['ID']}:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
@@ -149,10 +154,8 @@ elif st.session_state.perfil == "Emprendedores":
                             st.cache_data.clear()
                             st.rerun()
                         
-                        txt_wa = f"*🚀 OPTIRUTA DELIVERY*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n📝 *Detalles:* {f['Pedido']}\n💰 *Monto a Cobrar:* Gs. {monto_formateado:,} ({f['MetodoPago']})"
+                        txt_wa = f"*🚀 OPTIRUTA DELIVERY*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n📝 *Detalles:* {f['Pedido']}\n💰 *Monto a Cobrar:* ${f['Total']} ({f['MetodoPago']})"
                         num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                         if num_destino:
                             col3.link_button("📲 Despachar por WhatsApp", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
                         st.markdown("---")
-                        
-                st.markdown("### ⚙️ Control de Turnos Diarios")
