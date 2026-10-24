@@ -133,31 +133,27 @@ elif st.session_state.perfil == "Emprendedores":
             st.success("Acceso Autorizado")
             st.markdown("---")
             
-            # Eliminamos filas donde el ID sea nulo para evitar errores visuales
             df_filtrado = df_pedidos.dropna(subset=["ID"])
             
             if df_filtrado.empty:
                 st.info("No hay movimientos registrados hoy.")
             else:
-                # Agrupamos la edición en un formulario maestro para evitar recargas infinitas al mover selectores
                 with st.form("panel_control_pedidos"):
                     cambios_pedidos = []
                     
                     for idx, f in df_filtrado.iterrows():
                         with st.container():
-                            col1, col2, col3 = st.columns([1, 2, 2])
+                            col1, col2, col3 = st.columns()
                             col1.markdown(f"### `#{int(f['ID'])}`\n⏱️ {f['Hora']}")
                             col2.markdown(f"👤 **Cliente:** {f['Cliente']}\n📍 **Destino:** {f['Dirección']}\n📦 {f['Pedido']}")
                             col3.markdown(f"💰 **Total Cobro:** ${f['Total']} (_{f['MetodoPago']}_)")
                             
-                            # Validar que los índices por defecto sean seguros
                             idx_moto = (["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0
                             idx_estado = ["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0
                             
                             m_elegida = col3.selectbox(f"Asignar Vehículo a #{int(f['ID'])}:", ["Sin Asignar"] + MOTOS_FIJAS, index=idx_moto, key=f"m_{f['ID']}")
                             e_elegido = col3.selectbox(f"Estado de Ruta a #{int(f['ID'])}:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=idx_estado, key=f"e_{f['ID']}")
                             
-                            # Registramos el estado de esta fila para evaluarlo al enviar el formulario
                             cambios_pedidos.append({
                                 "id": f['ID'], 
                                 "repartidor": m_elegida, 
@@ -166,14 +162,13 @@ elif st.session_state.perfil == "Emprendedores":
                                 "original_e": f['Estado']
                             })
                             
-                            # Construcción del texto y botón de WhatsApp con enlace corregido (/)
                             txt_wa = f"*🚀 OPTIRUTA DELIVERY*\n📦 *Orden:* #{int(f['ID'])}\n📍 *Destino:* {f['Dirección']}\n📝 *Detalles:* {f['Pedido']}\n💰 *Monto a Cobrar:* ${f['Total']} ({f['MetodoPago']})"
                             num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                             if num_destino:
+                                # Aquí puedes ver la barra corregida para WhatsApp:
                                 col3.link_button("📲 Despachar por WhatsApp", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
                             st.markdown("---")
                     
-                    # Botón para procesar los cambios de estados de los pedidos editados
                     if st.form_submit_button("💾 Actualizar Todos los Estados / Motos", use_container_width=True):
                         hubo_cambios = False
                         for c in cambios_pedidos:
@@ -181,3 +176,14 @@ elif st.session_state.perfil == "Emprendedores":
                                 try:
                                     requests.post(API_URL, json={"accion": "actualizar_completo", "id": c["id"], "repartidor": c["repartidor"], "estado": c["estado"]}, timeout=3)
                                     hubo_cambios = True
+                                except:
+                                    pass 
+                        if hubo_cambios:
+                            st.cache_data.clear()
+                            st.rerun()
+                        
+                # --- CONTROL DE TURNOS DIARIOS ---
+                st.markdown("### ⚙️ Control de Turnos Diarios")
+                col_fl1, col_fl2 = st.columns(2)
+                with col_fl1:
+                    st.markdown("**Asignación de Motos**")
