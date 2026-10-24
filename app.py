@@ -118,7 +118,7 @@ with pestana_moto:
                     with st.container():
                         col_m1, col_m2 = st.columns()
                         with col_m1:
-                            st.markdown(f"### 📍 Orden #{id_p} (`{est}`)" )
+                            st.markdown(f"### 📍 Orden #{id_p} (`{est}`)")
                             st.markdown(f"**Dirección:** {dom}")
                             st.markdown(f"**Detalles:** {det}")
                             st.markdown(f"💰 **MONTO A COBRAR:** `${tot}`")
@@ -178,7 +178,7 @@ with pestana_local:
                     st.markdown(f"### `#{id_p}`")
                     st.caption(f"⏱️ {fila.get('Hora', '')}")
                     if rep != "Sin Asignar":
-                        st.caption(f" 👤 Conductor: **{chofer_actual}**")
+                        st.markdown(f"👤 Conductor: **{chofer_actual}**")
                 with c2:
                     st.markdown(f"👤 **Cliente:** {cli}")
                     st.markdown(f"📍 **Destino:** _{dom}_")
