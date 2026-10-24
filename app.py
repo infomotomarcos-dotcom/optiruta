@@ -75,7 +75,6 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe el paquete *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido o descripción del paquete *")
-            # Configurado con paso de 5000 Gs. para mejor experiencia de carga en Paraguay
             monto = st.number_input("Monto TOTAL neto a cobrar al cliente final (Gs.) - (Pon 0 si ya está pagado) *", min_value=0, step=5000, format="%d")
             pago = st.selectbox("¿Cómo pagará el destinatario al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud de Reparto", use_container_width=True)
@@ -94,15 +93,33 @@ elif st.session_state.perfil == "Emprendedores":
             st.success("Acceso Autorizado")
             st.markdown("---")
             
-            st.markdown("### 🧮 Módulo de Cierre de Caja Diaria (PYG)")
+            # --- 🏢 SELECCIÓN DE EMPRENDEDOR ---
+            st.markdown("### 🔍 Selector de Emprendedor / Comercio")
+            lista_emprendedores = ["Todos los Emprendedores"]
+            if not df_pedidos.empty and "Cliente" in df_pedidos.columns:
+                # Extraer nombres únicos de la columna Cliente
+                nombres_unicos = df_pedidos["Cliente"].dropna().unique().tolist()
+                lista_emprendedores.extend([str(n) for n in nombres_unicos])
+                
+            emprendedor_seleccionado = st.selectbox("Filtrar consola por comercio específico:", lista_emprendedores)
+            
+            # Filtrar el DataFrame de pedidos según la selección
+            if emprendedor_seleccionado == "Todos los Emprendedores":
+                df_filtrado_local = df_pedidos
+            else:
+                df_filtrado_local = df_pedidos[df_pedidos["Cliente"] == emprendedor_seleccionado]
+                
+            st.markdown("---")
+            
+            # --- 🧮 MODULE DE CIERRE DE CAJA DIARIA FILTRADO ---
+            st.markdown(f"### 🧮 Cierre de Caja Diaria ({emprendedor_seleccionado})")
             col_cfg1, col_cfg2 = st.columns(2)
-            # Costo preconfigurado en 15.000 Gs. (monto típico de delivery base)
             costo_envio_fijo = col_cfg1.number_input("Establecer pago base por envío al delivery (Gs.):", min_value=0, value=15000, step=1000, format="%d")
             
             if st.button("🔏 Ejecutar Cuadre y Cierre de Caja", use_container_width=True, type="primary"):
-                if not df_pedidos.empty:
-                    df_pedidos["Total"] = pd.to_numeric(df_pedidos["Total"], errors='coerce').fillna(0).astype(int)
-                    df_ok = df_pedidos[df_pedidos["Estado"] == "Entregado"]
+                if not df_filtrado_local.empty:
+                    df_filtrado_local["Total"] = pd.to_numeric(df_filtrado_local["Total"], errors='coerce').fillna(0).astype(int)
+                    df_ok = df_filtrado_local[df_filtrado_local["Estado"] == "Entregado"]
                     
                     total_recaudado = int(df_ok["Total"].sum())
                     transferencias = int(df_ok[df_ok["MetodoPago"].str.contains("Transferencia|Giros", na=False)]["Total"].sum())
@@ -113,6 +130,7 @@ elif st.session_state.perfil == "Emprendedores":
                     total_neto_emprendedores = int(total_recaudado - pago_total_deliverys)
                     
                     st.markdown("#### 📝 Reporte de Cierre Consolidado")
+                    st.caption(f"Filtro activo: {emprendedor_seleccionado}")
                     st.info(f"📊 **Volumen de Envíos Concluidos:** {cant_envios_ok} entregas.")
                     
                     c_c1, c_c2 = st.columns(2)
@@ -122,37 +140,24 @@ elif st.session_state.perfil == "Emprendedores":
                     
                     c_c2.metric("🏍️ Nómina Total a Pagar a Deliverys", f"Gs. {pago_total_deliverys:,}", delta=f"-Gs. {costo_envio_fijo:,} c/u", delta_color="inverse")
                     c_c2.metric("🏢 Total Neto a Rendir a Emprendedores", f"Gs. {total_neto_emprendedores:,}")
-                    
                     st.toast("Caja cuadrada de forma exitosa.")
                 else:
-                    st.warning("No hay registros cargados el día de hoy para computar cierres.")
+                    st.warning("No hay registros en la selección actual para computar cierres.")
                     
             st.markdown("---")
-            st.markdown("### 📋 Monitoreo de Órdenes Activas")
-            if df_pedidos.empty:
-                st.info("No hay movimientos registrados hoy.")
+            
+            # --- 📋 LISTADO DE ÓRDENES MONITOREADAS ---
+            st.markdown(f"### 📋 Órdenes Monitoreadas ({emprendedor_seleccionado})")
+            if df_filtrado_local.empty:
+                st.info("No hay movimientos registrados para la selección actual.")
             else:
-                for idx, f in df_pedidos.iterrows():
+                for idx, f in df_filtrado_local.iterrows():
                     with st.container():
                         col1, col2, col3 = st.columns()
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                        col2.markdown(f"👤 **Cliente:** {f['Cliente']}\n📍 **Destino:** _{f['Dirección']}_\n📦 {f['Pedido']}")
+                        col2.markdown(f"👤 **Cliente:** {f['Cliente']}\n📍 **Destino:** _{f['Dirección']}_\n📦 **Detalles:** {f['Pedido']}")
                         
                         monto_formateado = int(float(f['Total'])) if f['Total'] is not None else 0
                         col3.markdown(f"💰 **Total Cobro:** Gs. {monto_formateado:,} (_{f['MetodoPago']}_)")
                         
                         m_elegida = col3.selectbox(f"Asignar Vehículo a #{f['ID']}:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
-                        e_elegido = col3.selectbox(f"Estado de Ruta a #{f['ID']}:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
-                        
-                        if m_elegida != f['Repartidor'] or e_elegido != f['Estado']:
-                            requests.post(API_URL, json={"accion": "actualizar_completo", "id": f['ID'], "repartidor": m_elegida, "estado": e_elegido})
-                            st.cache_data.clear()
-                            st.rerun()
-                        
-                        txt_wa = f"*🚀 OPTIRUTA DELIVERY*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n📝 *Detalles:* {f['Pedido']}\n💰 *Monto a Cobrar:* Gs. {monto_formateado:,} ({f['MetodoPago']})"
-                        num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
-                        if num_destino:
-                            col3.link_button("📲 Despachar por WhatsApp", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
-                        st.markdown("---")
-                        
-                st.markdown("### ⚙️ Control de Turnos Diarios")
