@@ -67,7 +67,6 @@ if st.session_state.perfil == "Inicio":
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 OptiRuta Delivery</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size:18px;'>Bienvenido al Centro de Control de Repartos</p>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888;'>Selecciona tu perfil de acceso para continuar:</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
     col_btn1, col_btn2 = st.columns(2)
@@ -172,3 +171,5 @@ elif st.session_state.perfil == "Emprendedores":
                                 requests.post(API_URL, json={"accion": "guardar_turnos", "turnos": nuevos}, timeout=3)
                                 st.cache_data.clear()
                                 st.rerun()
+                            except:
+                                st.error("No se pudieron guardar los turnos.")
