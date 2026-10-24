@@ -93,7 +93,6 @@ elif st.session_state.perfil == "Emprendedores":
             st.success("Acceso Autorizado")
             st.markdown("---")
             
-            # --- 🏢 SELECCIÓN OBLIGATORIA DE EMPRENDEDOR ---
             st.markdown("### 🔍 Selector de Emprendedor / Comercio")
             lista_emprendedores = ["Seleccionar Emprendedor..."]
             if not df_pedidos.empty and "Cliente" in df_pedidos.columns:
@@ -104,58 +103,55 @@ elif st.session_state.perfil == "Emprendedores":
             
             st.markdown("---")
             
-            if emprendedor_seleccionado == "Seleccionar Emprendedor...":
-                st.info("💡 Por favor, selecciona un emprendedor de la lista de arriba para desplegar su arqueo de caja y sus pedidos correspondientes.")
-            else:
-                # Filtrar el DataFrame estrictamente por el emprendedor elegido
-                df_filtrado_local = df_pedidos[df_pedidos["Cliente"] == pd.Series(emprendedor_seleccionado, dtype=df_pedidos["Cliente"].dtype).iloc[0]]
-                
-                # --- 🧮 ARQUEO Y CIERRE DE CAJA DEPENDIENTE DEL EMPRENDEDOR ---
-                st.markdown(f"### 🧮 Arqueo y Liquidación Especial: **{emprendedor_seleccionado}**")
-                col_cfg1, col_cfg2 = st.columns(2)
-                costo_envio_fijo = col_cfg1.number_input("Costo del flete / envío a descontar (Gs.):", min_value=0, value=15000, step=1000, format="%d")
-                
-                if not df_filtrado_local.empty:
-                    df_filtrado_local["Total"] = pd.to_numeric(df_filtrado_local["Total"], errors='coerce').fillna(0).astype(int)
-                    # Filtrar solo lo entregado para hacer el arqueo de caja real
-                    df_ok = df_filtrado_local[df_filtrado_local["Estado"] == "Entregado"]
-                    
-                    cant_envios_ok = len(df_ok)
-                    total_recaudado = int(df_ok["Total"].sum())
-                    transferencias = int(df_ok[df_ok["MetodoPago"].str.contains("Transferencia|Giros", na=False)]["Total"].sum())
-                    efectivo = int(df_ok[df_ok["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum())
-                    
-                    pago_total_deliverys = int(cant_envios_ok * costo_envio_fijo)
-                    total_neto_emprendedores = int(total_recaudado - pago_total_deliverys)
-                    
-                    # Mostrar las métricas de cierre directamente en pantalla (sin requerir botón extra)
-                    st.markdown("#### 📝 Reporte de Cierre Consolidado")
-                    st.info(f"📊 **Envíos Entregados con éxito:** {cant_envios_ok} paquetes de este emprendedor.")
-                    
-                    c_c1, c_c2 = st.columns(2)
-                    c_c1.metric("💰 Total Bruto Cobrado", f"Gs. {total_recaudado:,}")
-                    c_c1.metric("📱 En Cuenta (Transferencias/Giros)", f"Gs. {transferencias:,}")
-                    c_c1.metric("💵 En Mano (Efectivo)", f"Gs. {efectivo:,}")
-                    
-                    c_c2.metric("🏍️ Costo de Envío acumulado (A retener)", f"Gs. {pago_total_deliverys:,}", delta=f"-Gs. {costo_envio_fijo:,} por viaje", delta_color="inverse")
-                    c_c2.metric("🏢 SALDO NETO A RENDIR AL EMPRENDEDOR", f"Gs. {total_neto_emprendedores:,}")
+            if ...:
+                if emprendedor_seleccionado == "Seleccionar Emprendedor...":
+                    st.info("💡 Por favor, selecciona un emprendedor de la lista de arriba para desplegar su arqueo de caja y sus pedidos correspondientes.")
                 else:
-                    st.warning("Este emprendedor no registra órdenes cargadas el día de hoy.")
+                    df_filtrado_local = df_pedidos[df_pedidos["Cliente"] == emprendedor_seleccionado]
                     
-                st.markdown("---")
-                
-                # --- 📋 LISTADO DE ÓRDENES FILTRADAS POR EL EMPRENDEDOR ---
-                st.markdown(f"### 📋 Monitoreo de Órdenes: **{emprendedor_seleccionado}**")
-                if df_filtrado_local.empty:
-                    st.info("No hay movimientos registrados para este comercio.")
-                else:
-                    for idx, f in df_filtrado_local.iterrows():
-                        with st.container():
-                            col1, col2, col3 = st.columns()
-                            col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                            col2.markdown(f"📍 **Destino:** _{f['Dirección']}_\n📦 **Detalles:** {f['Pedido']}")
-                            
-                            monto_formateado = int(float(f['Total'])) if f['Total'] is not None else 0
-                            col3.markdown(f"💰 **Total Cobro:** Gs. {monto_formateado:,} (_{f['MetodoPago']}_)")
-                            
-                            m_elegida = col3.selectbox(f"Asignar Moto a #{f['ID']}:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
+                    st.markdown(f"### 🧮 Arqueo y Liquidación Especial: **{emprendedor_seleccionado}**")
+                    col_cfg1, col_cfg2 = st.columns(2)
+                    costo_envio_fijo = col_cfg1.number_input("Costo del flete / envío a descontar (Gs.):", min_value=0, value=15000, step=1000, format="%d")
+                    
+                    if not df_filtrado_local.empty:
+                        df_filtrado_local["Total"] = pd.to_numeric(df_filtrado_local["Total"], errors='coerce').fillna(0).astype(int)
+                        df_ok = df_filtrado_local[df_filtrado_local["Estado"] == "Entregado"]
+                        
+                        cant_envios_ok = len(df_ok)
+                        total_recaudado = int(df_ok["Total"].sum())
+                        transferencias = int(df_ok[df_ok["MetodoPago"].str.contains("Transferencia|Giros", na=False)]["Total"].sum())
+                        efectivo = int(df_ok[df_ok["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum())
+                        
+                        pago_total_deliverys = int(cant_envios_ok * costo_envio_fijo)
+                        total_neto_emprendedores = int(total_recaudado - pago_total_deliverys)
+                        
+                        st.markdown("#### 📝 Reporte de Cierre Consolidado")
+                        st.info(f"📊 **Envíos Entregados con éxito:** {cant_envios_ok} paquetes de este emprendedor.")
+                        
+                        c_c1, c_c2 = st.columns(2)
+                        c_c1.metric("💰 Total Bruto Cobrado", f"Gs. {total_recaudado:,}")
+                        c_c1.metric("📱 En Cuenta (Transferencias/Giros)", f"Gs. {transferencias:,}")
+                        c_c1.metric("💵 En Mano (Efectivo)", f"Gs. {efectivo:,}")
+                        
+                        c_c2.metric("🏍️ Costo de Envío acumulado (A retener)", f"Gs. {pago_total_deliverys:,}", delta=f"-Gs. {costo_envio_fijo:,} por viaje", delta_color="inverse")
+                        c_c2.metric("🏢 SALDO NETO A RENDIR AL EMPRENDEDOR", f"Gs. {total_neto_emprendedores:,}")
+                    else:
+                        st.warning("Este emprendedor no registra órdenes cargadas el día de hoy.")
+                        
+                    st.markdown("---")
+                    
+                    st.markdown(f"### 📋 Monitoreo de Órdenes: **{emprendedor_seleccionado}**")
+                    if df_filtrado_local.empty:
+                        st.info("No hay movimientos registrados para este comercio.")
+                    else:
+                        for idx, f in df_filtrado_local.iterrows():
+                            with st.container():
+                                col1, col2, col3 = st.columns()
+                                col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
+                                col2.markdown(f"📍 **Destino:** _{f['Dirección']}_\n📦 **Detalles:** {f['Pedido']}")
+                                
+                                monto_formateado = int(float(f['Total'])) if f['Total'] is not None else 0
+                                col3.markdown(f"💰 **Total Cobro:** Gs. {monto_formateado:,} (_{f['MetodoPago']}_)")
+                                
+                                m_elegida = col3.selectbox(f"Asignar Moto a #{f['ID']}:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
+                                e_elegido = col3.selectbox(f"Estado de Ruta a #{f['ID']}:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
