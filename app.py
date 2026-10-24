@@ -153,5 +153,3 @@ elif st.session_state.perfil == "Emprendedores":
                             m_elegida = col3.selectbox(f"Asignar Moto a #{f['ID']}:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
                             e_elegido = col3.selectbox(f"Estado de Ruta a #{f['ID']}:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
                             
-                            if m_elegida != f['Repartidor'] or e_elegido != f['Estado']:
-                                requests.post(API_URL, json={"accion": "actualizar_completo", "id": f['ID'], "repartidor": m_elegida, "estado": e_elegido})
