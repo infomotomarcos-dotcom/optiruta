@@ -41,9 +41,11 @@ for col in columnas_base:
 if not df_pedidos.empty:
     df_pedidos["Total"] = pd.to_numeric(df_pedidos["Total"], errors='coerce').fillna(0.0)
 
-# Control de Navegación (Perfiles)
+# Inicializar estados de sesión para control de botones dinámicos
 if "perfil" not in st.session_state:
     st.session_state.perfil = "Inicio"
+if "emp_seleccionado" not in st.session_state:
+    st.session_state.emp_seleccionado = None
 
 # ==========================================
 # 1. PANTALLA DE INICIO
@@ -104,7 +106,7 @@ elif st.session_state.perfil == "Emprendedores":
                 st.rerun()
             
             # ----------------------------------------------------
-            # NUEVA SECCIÓN SELECCIONABLE: ARQUEO DE CAJA RENDICIÓN
+            # MÓDULO DE ARQUEO CON BOTONES SELECCIONABLES
             # ----------------------------------------------------
             st.markdown("### 📊 Módulo de Arqueo y Rendición de Caja")
             
@@ -113,18 +115,25 @@ elif st.session_state.perfil == "Emprendedores":
             
             if not df_entregados.empty:
                 lista_emprendedores = sorted(list(df_entregados["Cliente"].dropna().unique()))
-                emp_seleccionado = st.selectbox("Selecciona Emprendedor para calcular liquidación:", ["Elegir Comercio..."] + lista_emprendedores)
                 
-                col_costo1, col_costo2 = st.columns(2)
-                with col_costo1:
-                    costo_delivery = st.number_input("Costo del Delivery por Envío ($):", min_value=0.0, value=15000.0, step=500.0)
-                with col_costo2:
-                    st.write("") # Espaciador cosmético
-                    st.write("")
-                    ejecutar_arqueo = st.button("🧮 Generar Listado de Totales a Rendir", use_container_width=True, type="primary")
+                st.write("👉 **Selecciona un Emprendedor para liquidar:**")
                 
-                if emp_seleccionado != "Elegir Comercio..." and ejecutar_arqueo:
-                    # Datos específicos del emprendedor seleccionado
+                # Generar una grilla de botones en columnas dinámicas para elegir al cliente
+                columnas_emp = st.columns(3)
+                for index, emp in enumerate(lista_emprendedores):
+                    col_actual = columnas_emp[index % 3]
+                    # Resaltar de color diferente el botón que se encuentra activo
+                    es_activo = "primary" if st.session_state.emp_seleccionado == emp else "secondary"
+                    if col_actual.button(f"🏪 {emp}", use_container_width=True, type=es_activo, key=f"btn_emp_{index}"):
+                        st.session_state.emp_seleccionado = emp
+                        st.rerun()
+                
+                # Input para definir el costo del envío
+                costo_delivery = st.number_input("Costo del Delivery por Envío ($):", min_value=0.0, value=15000.0, step=500.0)
+                
+                # Si hay un emprendedor seleccionado por medio de los botones, procesamos las cuentas
+                if st.session_state.emp_seleccionado and st.session_state.emp_seleccionado in lista_emprendedores:
+                    emp_seleccionado = st.session_state.emp_seleccionado
                     df_filtrado_emp = df_entregados[df_entregados["Cliente"] == emp_seleccionado]
                     
                     total_cobrado_bruto = df_filtrado_emp["Total"].sum()
@@ -137,7 +146,7 @@ elif st.session_state.perfil == "Emprendedores":
                     transferencia = df_filtrado_emp[df_filtrado_emp["MetodoPago"].str.contains("Transferencia", na=False, case=False)]["Total"].sum()
                     mixto = df_filtrado_emp[df_filtrado_emp["MetodoPago"].str.contains("Mixto", na=False, case=False)]["Total"].sum()
                     
-                    st.info(f"📋 **Resumen de Cuentas para:** {emp_seleccionado}")
+                    st.success(f"📋 **Cuentas Generadas para:** {emp_seleccionado}")
                     
                     # Métricas clave en cuadros destacados
                     m1, m2, m3 = st.columns(3)
@@ -155,6 +164,10 @@ elif st.session_state.perfil == "Emprendedores":
                     
                     ⚠️ *Nota: El cálculo resta de manera matemática el total retenido para fletes al fondo bruto recolectado antes de liberar la ganancia comercial del emprendedor.*
                     """)
+                    
+                    if st.button("❌ Cerrar / Limpiar Arqueo Activo", use_container_width=True):
+                        st.session_state.emp_seleccionado = None
+                        st.rerun()
             else:
                 st.write("ℹ️ No hay pedidos registrados con el estado 'Entregado' el día de hoy para realizar arqueos.")
             
@@ -163,9 +176,3 @@ elif st.session_state.perfil == "Emprendedores":
             
             for idx, f in df_pedidos.iterrows():
                 with st.container():
-                    col1, col2, col3 = st.columns([1, 2, 1.5])
-                    col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                    col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}\n💰 *Monto:* ${f['Total']} ({f['MetodoPago']})")
-                    
-                    m_elegida = col3.selectbox(f"Vehículo:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
-                    e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
