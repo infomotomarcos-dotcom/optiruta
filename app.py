@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit st
 import pandas as pd
 import requests
 import urllib.parse
@@ -25,20 +25,20 @@ df_pedidos = pd.DataFrame([
     {"ID": 10, "Cliente": "Comercial San Cayetano", "Dirección": "Mariano Roque Alonso", "Pedido": "Para: Sol - Pack de Gaseosas", "Estado": "Cancelado", "MontoPedido": 180000, "Envio": 25000, "Total": 205000, "MetodoPago": "Efectivo", "Hora": "12:10", "Repartidor": "Moto 2"},
 ])
 
+# --- 3 REPARTIDORES FICTICIOS INYECTADOS CON SUS NÚMEROS ---
 df_conductores = pd.DataFrame([
     {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
     {"Nombre": "Carlos Gómez", "Telefono": "595982222222"},
     {"Nombre": "Lucas Benítez", "Telefono": "595983333333"}
 ])
 
-df_turnos = pd.DataFrame([
-    {"Moto": "Moto 1", "Conductor": "Juan Pérez"},
-    {"Moto": "Moto 2", "Conductor": "Carlos Gómez"},
-    {"Moto": "Moto 3", "Conductor": "Lucas Benítez"}
-])
+MAPEO_REPARTIDORES = {
+    "Juan Pérez": "Moto 1",
+    "Carlos Gómez": "Moto 2",
+    "Lucas Benítez": "Moto 3"
+}
 
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str)))
-TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str)))
 
 if "perfil" not in st.session_state:
     st.session_state.perfil = "Inicio"
@@ -107,7 +107,15 @@ elif st.session_state.perfil == "Emprendedores":
                         e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
                         
                         txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
-                        num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
+                        
+                        # --- CORREGIDO: Busca dinámicamente el teléfono según el vehículo asignado en la fila ---
+                        repartidor_nombre = ""
+                        for nombre_c, moto_c in MAPEO_REPARTIDORES.items():
+                            if moto_c == m_elegida:
+                                repartidor_nombre = nombre_c
+                                break
+                        num_destino = CONDUCTORES_DICT.get(repartidor_nombre, "")
+                        
                         if num_destino:
                             col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
@@ -131,7 +139,3 @@ elif st.session_state.perfil == "Emprendedores":
                     c2.metric("💳 Total Transferencia", f"Gs. {int(transfe_total):,}".replace(",", "."))
                     c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
                     
-                    st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
-                    
-                    with st.form("f_cierre_seguro", clear_on_submit=True):
-                        obs = st.text_input("Notas u Observaciones del Arqueo")
