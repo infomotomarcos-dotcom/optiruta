@@ -6,35 +6,32 @@ from datetime import datetime
 
 st.set_page_config(page_title="OptiRuta Delivery", page_icon="🚀", layout="centered")
 
-API_URL = "https://google.com"
+API_URL = "https://script.google.com/macros/s/AKfycbzDUvQoihxug2WCTECv6vinsLIP-caVsx1gpo_DlSTXKfnIZjl_HASHfB7k8zPeiY4/exec"
 METODOS_PAGO = ["Efectivo", "Transferencia", "Mixto (Efectivo + Transferencia)", "Ya pagado / Sin cobro"]
 MOTOS_FIJAS = ["Moto 1", "Moto 2", "Moto 3"]
 CONTRASEÑA_LOCAL = "1234"
 
-# --- DATOS FICTICIOS FORZADOS PARA REVISAR EL FUNCIONAMIENTO ---
-df_pedidos = pd.DataFrame([
-    {"ID": 1, "Cliente": "Novedades Juanita", "Dirección": "Av. Mariscal López 1450", "Pedido": "Para: María - Ropa y Calzados", "Estado": "Entregado", "MontoPedido": 150000, "Envio": 15000, "Total": 165000, "MetodoPago": "Efectivo", "Hora": "10:30", "Repartidor": "Moto 1"},
-    {"ID": 2, "Cliente": "Novedades Juanita", "Dirección": "Calle Palma esq. Chile", "Pedido": "Para: Pedro - Reloj de mano", "Estado": "Entregado", "MontoPedido": 85000, "Envio": 15000, "Total": 100000, "MetodoPago": "Transferencia", "Hora": "11:15", "Repartidor": "Moto 2"},
-    {"ID": 3, "Cliente": "Novedades Juanita", "Dirección": "Aviadores del Chaco 2200", "Pedido": "Para: Ana - Cartera de cuero", "Estado": "Pendiente", "MontoPedido": 300000, "Envio": 20000, "Total": 320000, "MetodoPago": "Efectivo", "Hora": "14:00", "Repartidor": "Sin Asignar"},
-    {"ID": 4, "Cliente": "Hamburguesería El Bajón", "Dirección": "Sajonia - Carlos A. López", "Pedido": "Para: Luis - 2 Combos Familiares", "Estado": "Entregado", "MontoPedido": 45000, "Envio": 10000, "Total": 55000, "MetodoPago": "Efectivo", "Hora": "20:15", "Repartidor": "Moto 1"},
-    {"ID": 5, "Cliente": "Hamburguesería El Bajón", "Dirección": "Villa Morra - Mcal Estigarribia", "Pedido": "Para: Fernando - Sándwich de Milanesa", "Estado": "Entregado", "MontoPedido": 120000, "Envio": 12000, "Total": 132000, "MetodoPago": "Mixto (Efectivo + Transferencia)", "Hora": "21:00", "Repartidor": "Moto 3"},
-    {"ID": 6, "Cliente": "Farmacia San Blas", "Dirección": "Fernando de la Mora esq. 1ro de Mayo", "Pedido": "Para: Gabriela - Medicamentos varios", "Estado": "Entregado", "MontoPedido": 210000, "Envio": 15000, "Total": 225000, "MetodoPago": "Transferencia", "Hora": "16:45", "Repartidor": "Moto 2"},
-])
+@st.cache_data(ttl=2)
+def obtener_datos_sistema():
+    try:
+        response = requests.get(API_URL)
+        if response.status_code == 200:
+            data = response.json()
+            return pd.DataFrame(data.get("pedidos", [])), pd.DataFrame(data.get("conductores", [])), pd.DataFrame(data.get("turnos_hoy", []))
+    except:
+        pass
+    df_c_mock = pd.DataFrame([{"Nombre": "Juan Pérez", "Telefono": "595981111111"},{"Nombre": "Carlos Gómez", "Telefono": "595982222222"}])
+    df_t_mock = pd.DataFrame([{"Moto": "Moto 1", "Conductor": "Juan Pérez"},{"Moto": "Moto 2", "Conductor": "Carlos Gómez"},{"Moto": "Moto 3", "Conductor": "Sin Asignar"}])
+    return pd.DataFrame(), df_c_mock, df_t_mock
 
-df_conductores = pd.DataFrame([
-    {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
-    {"Nombre": "Carlos Gómez", "Telefono": "595982222222"}
-])
+df_pedidos, df_conductores, df_turnos = obtener_datos_sistema()
+CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str))) if not df_conductores.empty else {}
+TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str))) if not df_turnos.empty else {}
 
-df_turnos = pd.DataFrame([
-    {"Moto": "Moto 1", "Conductor": "Juan Pérez"},
-    {"Moto": "Moto 2", "Conductor": "Carlos Gómez"},
-    {"Moto": "Moto 3", "Conductor": "Sin Asignar"}
-])
-# -----------------------------------------------------------------
-
-CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str)))
-TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str)))
+columnas_base = ["ID", "Cliente", "Dirección", "Pedido", "Total", "Repartidor", "Estado", "Hora", "MetodoPago"]
+for col in columnas_base:
+    if df_pedidos.empty or col not in df_pedidos.columns:
+        df_pedidos[col] = None
 
 if "perfil" not in st.session_state:
     st.session_state.perfil = "Inicio"
@@ -65,92 +62,116 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
-            
-            m_pedido = st.number_input("Monto del Pedido (Gs.) *", min_value=0, step=1000, value=0)
-            m_envio = st.number_input("Monto del Envío / Flete (Gs.) *", min_value=0, step=1000, value=0)
-            
+            monto = st.number_input("Monto TOTAL a cobrar ($) *", min_value=0.0, step=1.0)
             pago = st.selectbox("¿Cómo pagará al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud", use_container_width=True)
             
         if enviar and c_nom and d_dir and detalles:
-            gran_total_calculado = m_pedido + m_envio
-            pld_crear = {
-                "accion": "crear", 
-                "ID": len(df_pedidos)+1, 
-                "Cliente": f"{c_nom} ({c_tel})", 
-                "Dirección": d_dir, 
-                "Pedido": f"Para: {d_nom} - {detalles}", 
-                "MontoPedido": m_pedido,
-                "Envio": m_envio,
-                "Total": gran_total_calculado, 
-                "Repartidor": "Sin Asignar", 
-                "Estado": "Pendiente", 
-                "Hora": datetime.now().strftime("%H:%M"), 
-                "MetodoPago": pago
-            }
-            requests.post(API_URL, json=pld_crear)
-            st.success("¡Envío registrado exitosamente! (Simulado)")
+            payload = {"accion": "crear", "ID": len(df_pedidos)+1, "Cliente": f"{c_nom} ({c_tel})", "Dirección": d_dir, "Pedido": f"Para: {d_nom} - {detalles}", "Total": monto, "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": datetime.now().strftime("%H:%M"), "MetodoPago": pago}
+            requests.post(API_URL, json=payload)
+            st.success("¡Envío registrado!")
             st.cache_data.clear()
-            st.rerun()
             
     with p_admin:
         clave = st.text_input("Introduce la clave del local:", type="password")
         if clave == CONTRASEÑA_LOCAL:
+            p_pedidos, p_cierre = st.tabs(["📦 GESTIÓN DE PEDIDOS", "💰 CIERRE DE CAJA"])
             
-            tab_gestion, tab_cierre = st.tabs(["📦 GESTIÓN DE PEDIDOS", "💰 AUDITORÍA DE CIERRE"])
-            
-            with tab_gestion:
-                lista_emp = ["Todos"] + sorted(list(df_pedidos["Cliente"].dropna().unique()))
-                emp_filtro = st.selectbox("Filtrar por Emprendedor / Comercio:", lista_emp, key="filtro_adm")
-                
-                if emp_filtro != "Todos":
-                    df_visibles = df_pedidos[df_pedidos["Cliente"] == emp_filtro]
-                else:
-                    df_visibles = df_pedidos
-                
-                for idx, f in df_visibles.iterrows():
+            with p_pedidos:
+                for idx, f in df_pedidos.iterrows():
                     with st.container():
-                        # --- CORREGIDO: Se añadió el número 3 dentro de st.columns() ---
-                        col1, col2, col3 = st.columns(3)
+                        col1, col2, col3 = st.columns()
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                        
-                        val_ped = f"{int(f['MontoPedido']):,}".replace(",", ".")
-                        val_env = f"{int(f['Envio']):,}".replace(",", ".")
-                        val_tot = f"{int(f['Total']):,}".replace(",", ".")
-                        
-                        col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}\n💵 *Pedido:* Gs. {val_ped} | 🏍️ *Envío:* Gs. {val_env}")
-                        
+                        col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}")
                         m_elegida = col3.selectbox(f"Vehículo:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
                         e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
                         
-                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
+                        if m_elegida != f['Repartidor'] or e_elegido != f['Estado']:
+                            requests.post(API_URL, json={"accion": "actualizar_completo", "id": f['ID'], "repartidor": m_elegida, "estado": e_elegido})
+                            st.cache_data.clear()
+                            st.rerun()
+                            
+                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💰 *Cobrar:* ${f['Total']}"
                         num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                         if num_destino:
-                            col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
+                            col3.link_button("📲 Despachar", f"https://wa.me/{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
-            with tab_cierre:
-                lista_cierre = sorted(list(df_pedidos["Cliente"].dropna().unique()))
-                emp_cierre = st.selectbox("Selecciona el Comercio para sumar totales:", lista_cierre, key="filtro_cie")
-                st.markdown(f"### 📊 Rendición del Día: **{emp_cierre}**")
+            with p_cierre:
+                st.markdown("### Rendición de Cuentas por Emprendedor")
                 
-                df_calc = df_pedidos[(df_pedidos["Cliente"] == emp_cierre) & (df_pedidos["Estado"] == "Entregado")].copy()
-                
-                if not df_calc.empty:
-                    df_calc["Total"] = df_calc["Total"].astype(float)
+                if not df_pedidos.empty:
+                    lista_emprendedores = sorted(list(df_pedidos["Cliente"].dropna().unique()))
                     
-                    efectivo_total = df_calc[df_calc["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum()
-                    transfe_total = df_calc[df_calc["MetodoPago"].str.contains("Transferencia", na=False)]["Total"].sum()
-                    mixto_total = df_calc[df_calc["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
-                    gran_total = df_calc["Total"].sum()
-                    
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("💵 Total Efectivo", f"Gs. {int(efectivo_total):,}".replace(",", "."))
-                    c2.metric("💳 Total Transferencia", f"Gs. {int(transfe_total):,}".replace(",", "."))
-                    c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
-                    
-                    st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
-                    
-                    with st.form("f_cierre_seguro", clear_on_submit=True):
-                        obs = st.text_input("Notas u Observaciones del Arqueo")
-                        btn_guardar_cierre = st.form_submit_button("🔒 Archivar Cierre de Caja", use_container_width=True, type="primary")
-                        if btn_guardar_cierre:
+                    if lista_emprendedores:
+                        emp_seleccionado = st.selectbox("Selecciona el Emprendedor / Comercio:", lista_emprendedores)
+                        df_emp = df_pedidos[(df_pedidos["Cliente"] == emp_seleccionado) & (df_pedidos["Estado"] == "Entregado")]
+                        
+                        if not df_emp.empty:
+                            st.markdown(f"#### Pedidos Entregados de: `{emp_seleccionado}`")
+                            
+                            df_resumen = df_emp[["ID", "Hora", "Pedido", "Total", "MetodoPago"]].copy()
+                            df_resumen["Total"] = df_resumen["Total"].astype(float)
+                            st.dataframe(df_resumen, use_container_width=True, hide_index=True)
+                            
+                            efectivo_total = df_resumen[df_resumen["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum()
+                            transfe_total = df_resumen[df_resumen["MetodoPago"].str.contains("Transferencia", na=False)]["Total"].sum()
+                            mixto_total = df_resumen[df_resumen["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
+                            gran_total = df_resumen["Total"].sum()
+                            
+                            st.markdown("---")
+                            st.markdown("### 📊 Resumen Financiero de Caja")
+                            
+                            c1, c2, c3 = st.columns(3)
+                            c1.metric("💵 Total Efectivo", f"${efectivo_total:,.0f}")
+                            c2.metric("💳 Total Transferencia", f"${transfe_total:,.0f}")
+                            c3.metric("🔀 Total Mixto", f"${mixto_total:,.0f}")
+                            
+                            st.markdown(f"**Total General Entregado:** `${gran_total:,.0f}`")
+                            
+                            with st.form("f_cierre_caja"):
+                                observaciones = st.text_input("Observaciones o Notas del Cierre")
+                                btn_cierre = st.form_submit_button("🔒 Procesar y Archivar Cierre de Caja", use_container_width=True, type="primary")
+                                
+                                if btn_cierre:
+                                    payload_cierre = {
+                                        "accion": "cierre_caja",
+                                        "emprendedor": emp_seleccionado,
+                                        "total_rendido": gran_total,
+                                        "observaciones": observaciones,
+                                        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
+                                    }
+                                    try:
+                                        requests.post(API_URL, json=payload_cierre)
+                                        st.success(f"¡Cierre de caja archivado con éxito para {emp_seleccionado}!")
+                                        st.cache_data.clear()
+                                    except:
+                                        st.error("Error de comunicación con el servidor de Google Sheets.")
+                        else:
+                            st.info("Este emprendedor no tiene pedidos con estado 'Entregado' pendientes de cierre hoy.")
+                    else:
+                        st.info("No se encontraron clientes registrados en la base de datos.")
+                else:
+                    st.info("No hay pedidos registrados en el sistema el día de hoy.")
+
+elif st.session_state.perfil == "Conductores":
+    if st.button("⬅️ Volver al Inicio"):
+        st.session_state.perfil = "Inicio"
+        st.rerun()
+        
+    chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
+    if chofer != "Seleccionar...":
+        m_hoy = [m for m, c in TURNOS_DICT.items() if c == chofer]
+        if m_hoy:
+            moto_asignada = m_hoy[0]
+            df_m = df_pedidos[(df_pedidos["Repartidor"] == moto_asignada) & (df_pedidos["Estado"].isin(["Pendiente", "En Ruta"]))]
+            if not df_m.empty:
+                for idx, f in df_m.iterrows():
+                    st.markdown(f"#### 📍 Orden #{f['ID']} — Cobrar: `${f['Total']}`")
+                    if st.button(f"✅ Confirmar Entrega #{f['ID']}", use_container_width=True):
+                        requests.post(API_URL, json={"accion": "actualizar_entrega_moto", "id": f['ID'], "estado": "Entregado", "metodo_real": f['MetodoPago']})
+                        st.cache_data.clear()
+                        st.rerun()
+            else:
+                st.info("No tienes pedidos pendientes o en ruta asignados para hoy.")
+        else:
+            st.warning("No tienes ninguna moto asignada en los turnos de hoy.")
