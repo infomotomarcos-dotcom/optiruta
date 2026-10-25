@@ -11,7 +11,7 @@ METODOS_PAGO = ["Efectivo", "Transferencia", "Mixto (Efectivo + Transferencia)",
 MOTOS_FIJAS = ["Moto 1", "Moto 2", "Moto 3"]
 CONTRASEÑA_LOCAL = "1234"
 
-# --- 10 DATOS FALSOS PARAGUAYOS PARA REVISAR EL FUNCIONAMIENTO ---
+# Base de datos simulada con 10 pedidos locales y 3 repartidores paraguayos fijos
 df_pedidos = pd.DataFrame([
     {"ID": 1, "Cliente": "Novedades Juanita", "Dirección": "Av. Mariscal López 1450", "Pedido": "Para: María - Ropa", "Estado": "En Ruta", "MontoPedido": 150000, "Envio": 15000, "Total": 165000, "MetodoPago": "Efectivo", "Hora": "10:30", "Repartidor": "Moto 1"},
     {"ID": 2, "Cliente": "Novedades Juanita", "Dirección": "Calle Palma esq. Chile", "Pedido": "Para: Pedro - Reloj", "Estado": "Pendiente", "MontoPedido": 85000, "Envio": 15000, "Total": 100000, "MetodoPago": "Transferencia", "Hora": "11:15", "Repartidor": "Moto 2"},
@@ -25,7 +25,6 @@ df_pedidos = pd.DataFrame([
     {"ID": 10, "Cliente": "Comercial San Cayetano", "Dirección": "Mariano Roque Alonso", "Pedido": "Para: Sol - Pack de Gaseosas", "Estado": "Cancelado", "MontoPedido": 180000, "Envio": 25000, "Total": 205000, "MetodoPago": "Efectivo", "Hora": "12:10", "Repartidor": "Moto 2"},
 ])
 
-# --- 3 REPARTIDORES FICTICIOS INYECTADOS CON SUS NÚMEROS ---
 df_conductores = pd.DataFrame([
     {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
     {"Nombre": "Carlos Gómez", "Telefono": "595982222222"},
@@ -139,4 +138,4 @@ elif st.session_state.perfil == "Emprendedores":
                     c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
                     
                     st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
-                    
+                    st.success("Información contable generada en base a pedidos entregados.")
