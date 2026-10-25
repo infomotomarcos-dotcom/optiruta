@@ -163,4 +163,3 @@ elif st.session_state.perfil == "Emprendedores":
                                         st.error("Error de comunicación con el servidor de Google Sheets.")
                         else:
                             st.info("Este emprendedor no tiene pedidos con estado 'Entregado' pendientes de cierre hoy.")
-                else:
