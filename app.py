@@ -63,7 +63,7 @@ elif st.session_state.perfil == "Emprendedores":
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
             
-            # Nuevos campos solicitados para desglosar el dinero
+            # Segmentación de costos
             monto_pedido = st.number_input("Costo del Pedido ($) *", min_value=0.0, step=1.0)
             monto_envio = st.number_input("Costo del Envío ($) *", min_value=0.0, step=1.0)
             
@@ -71,7 +71,6 @@ elif st.session_state.perfil == "Emprendedores":
             enviar = st.form_submit_button("🚀 Enviar Solicitud", use_container_width=True)
             
         if enviar and c_nom and d_dir and detalles:
-            # Cálculo automático en tiempo real al procesar
             monto_total = monto_pedido + monto_envio
             
             payload = {
@@ -87,7 +86,7 @@ elif st.session_state.perfil == "Emprendedores":
                 "MetodoPago": pago
             }
             requests.post(API_URL, json=payload)
-            st.success(f"¡Envío registrado con éxito! Costo Total: ${monto_total}")
+            st.success(f"¡Envío registrado! Costo Total: ${monto_total}")
             st.cache_data.clear()
             
     with p_admin:
@@ -165,3 +164,5 @@ elif st.session_state.perfil == "Emprendedores":
                                     except:
                                         st.error("Error de comunicación con el servidor de Google Sheets.")
                         else:
+                            st.info("Este emprendedor no tiene pedidos con estado 'Entregado' pendientes de cierre hoy.")
+                    else:
