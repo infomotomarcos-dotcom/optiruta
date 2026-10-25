@@ -25,7 +25,6 @@ df_pedidos = pd.DataFrame([
     {"ID": 10, "Cliente": "Comercial San Cayetano", "Dirección": "Mariano Roque Alonso", "Pedido": "Para: Sol - Pack de Gaseosas", "Estado": "Cancelado", "MontoPedido": 180000, "Envio": 25000, "Total": 205000, "MetodoPago": "Efectivo", "Hora": "12:10", "Repartidor": "Moto 2"},
 ])
 
-# --- MODIFICADO: 3 CONDUCTORES Y ASIGNACIONES DE MOTOS FIJAS ---
 df_conductores = pd.DataFrame([
     {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
     {"Nombre": "Carlos Gómez", "Telefono": "595982222222"},
@@ -37,7 +36,6 @@ df_turnos = pd.DataFrame([
     {"Moto": "Moto 2", "Conductor": "Carlos Gómez"},
     {"Moto": "Moto 3", "Conductor": "Lucas Benítez"}
 ])
-# -----------------------------------------------------------------
 
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str)))
 TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str)))
@@ -136,3 +134,4 @@ elif st.session_state.perfil == "Emprendedores":
                     st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
                     
                     with st.form("f_cierre_seguro", clear_on_submit=True):
+                        obs = st.text_input("Notas u Observaciones del Arqueo")
