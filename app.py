@@ -1,4 +1,4 @@
-import streamlit st
+import streamlit as st
 import pandas as pd
 import requests
 import urllib.parse
@@ -108,7 +108,6 @@ elif st.session_state.perfil == "Emprendedores":
                         
                         txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
                         
-                        # --- CORREGIDO: Busca dinámicamente el teléfono según el vehículo asignado en la fila ---
                         repartidor_nombre = ""
                         for nombre_c, moto_c in MAPEO_REPARTIDORES.items():
                             if moto_c == m_elegida:
@@ -138,4 +137,6 @@ elif st.session_state.perfil == "Emprendedores":
                     c1.metric("💵 Total Efectivo", f"Gs. {int(efectivo_total):,}".replace(",", "."))
                     c2.metric("💳 Total Transferencia", f"Gs. {int(transfe_total):,}".replace(",", "."))
                     c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
+                    
+                    st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
                     
