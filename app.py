@@ -35,23 +35,23 @@ for col in columnas_base:
         df_pedidos[col] = None
 
 if "perfil" not in st.session_state:
-    st.session_state.perfil = "S0"
+    st.session_state.perfil = "Inicio"
 
-if st.session_state.perfil == "S0":
+if st.session_state.perfil == "Inicio":
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 OptiRuta Delivery</h1>", unsafe_allow_html=True)
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
         if st.button("🏢 Emprendedores / Clientes", use_container_width=True, type="primary"):
-            st.session_state.perfil = "S1"
+            st.session_state.perfil = "Emprendedores"
             st.rerun()
     with col_btn2:
         if st.button("🏍️ Conductores / Repartidores", use_container_width=True, type="secondary"):
-            st.session_state.perfil = "S2"
+            st.session_state.perfil = "Conductores"
             st.rerun()
 
-elif st.session_state.perfil == "S1":
+elif st.session_state.perfil == "Emprendedores":
     if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "S0"
+        st.session_state.perfil = "Inicio"
         st.rerun()
     
     p_carga, p_admin = st.tabs(["📥 CARGAR NUEVO ENVÍO", "🔒 ACCESO PRIVADO LOCAL"])
@@ -95,7 +95,22 @@ elif st.session_state.perfil == "S1":
         clave = st.text_input("Introduce la clave del local:", type="password")
         if clave == CONTRASEÑA_LOCAL:
             st.markdown("### 📦 GESTIÓN DE PEDIDOS")
-            for idx, f in df_pedidos.iterrows():
+            
+            # --- AGREGADO: Filtro desplegable por Emprendedor ---
+            if not df_pedidos.empty:
+                 lista_emp = ["Todos"] + sorted(list(df_pedidos["Cliente"].dropna().unique()))
+                 emp_filtro = st.selectbox("Filtrar por Emprendedor / Comercio:", lista_emp)
+                 
+                 if emp_filtro != "Todos":
+                     df_visibles = df_pedidos[df_pedidos["Cliente"] == emp_filtro]
+                 else:
+                     df_visibles = df_pedidos
+            else:
+                 df_visibles = df_pedidos
+                 st.info("No hay pedidos registrados en el sistema el día de hoy.")
+            # --------------------------------------------------
+            
+            for idx, f in df_visibles.iterrows():
                 with st.container():
                     col1, col2, col3 = st.columns()
                     col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
@@ -119,9 +134,9 @@ elif st.session_state.perfil == "S1":
                     if num_destino:
                         col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
-elif st.session_state.perfil == "S2":
+elif st.session_state.perfil == "Conductores":
     if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "S0"
+        st.session_state.perfil = "Inicio"
         st.rerun()
         
     chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
