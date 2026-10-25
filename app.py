@@ -11,33 +11,30 @@ METODOS_PAGO = ["Efectivo", "Transferencia", "Mixto (Efectivo + Transferencia)",
 MOTOS_FIJAS = ["Moto 1", "Moto 2", "Moto 3"]
 CONTRASEÑA_LOCAL = "1234"
 
-# Base de datos simulada con 10 pedidos locales y 3 repartidores paraguayos fijos
+# --- DATOS FICTICIOS FORZADOS PARA REVISAR EL FUNCIONAMIENTO ---
 df_pedidos = pd.DataFrame([
-    {"ID": 1, "Cliente": "Novedades Juanita", "Dirección": "Av. Mariscal López 1450", "Pedido": "Para: María - Ropa", "Estado": "En Ruta", "MontoPedido": 150000, "Envio": 15000, "Total": 165000, "MetodoPago": "Efectivo", "Hora": "10:30", "Repartidor": "Moto 1"},
-    {"ID": 2, "Cliente": "Novedades Juanita", "Dirección": "Calle Palma esq. Chile", "Pedido": "Para: Pedro - Reloj", "Estado": "Pendiente", "MontoPedido": 85000, "Envio": 15000, "Total": 100000, "MetodoPago": "Transferencia", "Hora": "11:15", "Repartidor": "Moto 2"},
-    {"ID": 3, "Cliente": "Novedades Juanita", "Dirección": "Aviadores del Chaco 2200", "Pedido": "Para: Ana - Cartera", "Estado": "Pendiente", "MontoPedido": 300000, "Envio": 20000, "Total": 320000, "MetodoPago": "Efectivo", "Hora": "14:00", "Repartidor": "Sin Asignar"},
-    {"ID": 4, "Cliente": "Hamburguesería El Bajón", "Dirección": "Sajonia - Carlos A. López", "Pedido": "Para: Luis - 2 Combos", "Estado": "En Ruta", "MontoPedido": 45000, "Envio": 10000, "Total": 55000, "MetodoPago": "Efectivo", "Hora": "20:15", "Repartidor": "Moto 1"},
-    {"ID": 5, "Cliente": "Hamburguesería El Bajón", "Dirección": "Villa Morra - Mcal Estigarribia", "Pedido": "Para: Fernando - Lomito", "Estado": "En Ruta", "MontoPedido": 120000, "Envio": 12000, "Total": 132000, "MetodoPago": "Mixto (Efectivo + Transferencia)", "Hora": "21:00", "Repartidor": "Moto 3"},
-    {"ID": 6, "Cliente": "Farmacia San Blas", "Dirección": "Fernando de la Mora esq. 1ro de Mayo", "Pedido": "Para: Gabriela - Remedios", "Estado": "En Ruta", "MontoPedido": 210000, "Envio": 15000, "Total": 225000, "MetodoPago": "Transferencia", "Hora": "16:45", "Repartidor": "Moto 2"},
-    {"ID": 7, "Cliente": "Farmacia San Blas", "Dirección": "Luque - Centro", "Pedido": "Para: Roque - Pañales", "Estado": "Pendiente", "MontoPedido": 95000, "Envio": 15000, "Total": 110000, "MetodoPago": "Efectivo", "Hora": "17:30", "Repartidor": "Moto 1"},
-    {"ID": 8, "Cliente": "Pizzería La Bella", "Dirección": "San Lorenzo - UNA", "Pedido": "Para: Carlos - Pizza Familiar", "Estado": "En Ruta", "MontoPedido": 70000, "Envio": 12000, "Total": 82000, "MetodoPago": "Efectivo", "Hora": "19:40", "Repartidor": "Moto 3"},
-    {"ID": 9, "Cliente": "Pizzería La Bella", "Dirección": "Lambaré - Av. Cacique", "Pedido": "Para: Diego - 2 Pizzas Medianas", "Estado": "Pendiente", "MontoPedido": 110000, "Envio": 15000, "Total": 125000, "MetodoPago": "Transferencia", "Hora": "20:00", "Repartidor": "Sin Asignar"},
-    {"ID": 10, "Cliente": "Comercial San Cayetano", "Dirección": "Mariano Roque Alonso", "Pedido": "Para: Sol - Pack de Gaseosas", "Estado": "Cancelado", "MontoPedido": 180000, "Envio": 25000, "Total": 205000, "MetodoPago": "Efectivo", "Hora": "12:10", "Repartidor": "Moto 2"},
+    {"ID": 1, "Cliente": "Novedades Juanita", "Dirección": "Av. Mariscal López 1450", "Pedido": "Para: María - Ropa y Calzados", "Estado": "Entregado", "MontoPedido": 150000, "Envio": 15000, "Total": 165000, "MetodoPago": "Efectivo", "Hora": "10:30", "Repartidor": "Moto 1"},
+    {"ID": 2, "Cliente": "Novedades Juanita", "Dirección": "Calle Palma esq. Chile", "Pedido": "Para: Pedro - Reloj de mano", "Estado": "Entregado", "MontoPedido": 85000, "Envio": 15000, "Total": 100000, "MetodoPago": "Transferencia", "Hora": "11:15", "Repartidor": "Moto 2"},
+    {"ID": 3, "Cliente": "Novedades Juanita", "Dirección": "Aviadores del Chaco 2200", "Pedido": "Para: Ana - Cartera de cuero", "Estado": "Pendiente", "MontoPedido": 300000, "Envio": 20000, "Total": 320000, "MetodoPago": "Efectivo", "Hora": "14:00", "Repartidor": "Sin Asignar"},
+    {"ID": 4, "Cliente": "Hamburguesería El Bajón", "Dirección": "Sajonia - Carlos A. López", "Pedido": "Para: Luis - 2 Combos Familiares", "Estado": "Entregado", "MontoPedido": 45000, "Envio": 10000, "Total": 55000, "MetodoPago": "Efectivo", "Hora": "20:15", "Repartidor": "Moto 1"},
+    {"ID": 5, "Cliente": "Hamburguesería El Bajón", "Dirección": "Villa Morra - Mcal Estigarribia", "Pedido": "Para: Fernando - Sándwich de Milanesa", "Estado": "Entregado", "MontoPedido": 120000, "Envio": 12000, "Total": 132000, "MetodoPago": "Mixto (Efectivo + Transferencia)", "Hora": "21:00", "Repartidor": "Moto 3"},
+    {"ID": 6, "Cliente": "Farmacia San Blas", "Dirección": "Fernando de la Mora esq. 1ro de Mayo", "Pedido": "Para: Gabriela - Medicamentos varios", "Estado": "Entregado", "MontoPedido": 210000, "Envio": 15000, "Total": 225000, "MetodoPago": "Transferencia", "Hora": "16:45", "Repartidor": "Moto 2"},
 ])
 
 df_conductores = pd.DataFrame([
     {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
-    {"Nombre": "Carlos Gómez", "Telefono": "595982222222"},
-    {"Nombre": "Lucas Benítez", "Telefono": "595983333333"}
+    {"Nombre": "Carlos Gómez", "Telefono": "595982222222"}
 ])
 
-MAPEO_REPARTIDORES = {
-    "Juan Pérez": "Moto 1",
-    "Carlos Gómez": "Moto 2",
-    "Lucas Benítez": "Moto 3"
-}
+df_turnos = pd.DataFrame([
+    {"Moto": "Moto 1", "Conductor": "Juan Pérez"},
+    {"Moto": "Moto 2", "Conductor": "Carlos Gómez"},
+    {"Moto": "Moto 3", "Conductor": "Sin Asignar"}
+])
+# -----------------------------------------------------------------
 
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str)))
+TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str)))
 
 if "perfil" not in st.session_state:
     st.session_state.perfil = "Inicio"
@@ -68,13 +65,33 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
+            
             m_pedido = st.number_input("Monto del Pedido (Gs.) *", min_value=0, step=1000, value=0)
             m_envio = st.number_input("Monto del Envío / Flete (Gs.) *", min_value=0, step=1000, value=0)
+            
             pago = st.selectbox("¿Cómo pagará al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud", use_container_width=True)
             
-        if enviar:
+        if enviar and c_nom and d_dir and detalles:
+            gran_total_calculado = m_pedido + m_envio
+            pld_crear = {
+                "accion": "crear", 
+                "ID": len(df_pedidos)+1, 
+                "Cliente": f"{c_nom} ({c_tel})", 
+                "Dirección": d_dir, 
+                "Pedido": f"Para: {d_nom} - {detalles}", 
+                "MontoPedido": m_pedido,
+                "Envio": m_envio,
+                "Total": gran_total_calculado, 
+                "Repartidor": "Sin Asignar", 
+                "Estado": "Pendiente", 
+                "Hora": datetime.now().strftime("%H:%M"), 
+                "MetodoPago": pago
+            }
+            requests.post(API_URL, json=pld_crear)
             st.success("¡Envío registrado exitosamente! (Simulado)")
+            st.cache_data.clear()
+            st.rerun()
             
     with p_admin:
         clave = st.text_input("Introduce la clave del local:", type="password")
@@ -93,6 +110,7 @@ elif st.session_state.perfil == "Emprendedores":
                 
                 for idx, f in df_visibles.iterrows():
                     with st.container():
+                        # --- CORREGIDO: Se añadió el número 3 dentro de st.columns() ---
                         col1, col2, col3 = st.columns(3)
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
                         
@@ -106,14 +124,7 @@ elif st.session_state.perfil == "Emprendedores":
                         e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
                         
                         txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
-                        
-                        repartidor_nombre = ""
-                        for nombre_c, moto_c in MAPEO_REPARTIDORES.items():
-                            if moto_c == m_elegida:
-                                repartidor_nombre = nombre_c
-                                break
-                        num_destino = CONDUCTORES_DICT.get(repartidor_nombre, "")
-                        
+                        num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                         if num_destino:
                             col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
@@ -138,4 +149,8 @@ elif st.session_state.perfil == "Emprendedores":
                     c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
                     
                     st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
-                    st.success("Información contable generada en base a pedidos entregados.")
+                    
+                    with st.form("f_cierre_seguro", clear_on_submit=True):
+                        obs = st.text_input("Notas u Observaciones del Arqueo")
+                        btn_guardar_cierre = st.form_submit_button("🔒 Archivar Cierre de Caja", use_container_width=True, type="primary")
+                        if btn_guardar_cierre:
