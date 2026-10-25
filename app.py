@@ -35,9 +35,9 @@ for col in columnas_base:
         df_pedidos[col] = None
 
 if "perfil" not in st.session_state:
-    st.session_state.perfil = "Inicio"
+    st.session_state.perfil = "inicio_perfil"
 
-if st.session_state.perfil == "Inicio":
+if st.session_state.perfil == "inicio_perfil":
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 OptiRuta Delivery</h1>", unsafe_allow_html=True)
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
@@ -51,7 +51,7 @@ if st.session_state.perfil == "Inicio":
 
 elif st.session_state.perfil == "Emprendedores":
     if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "Inicio"
+        st.session_state.perfil = "inicio_perfil"
         st.rerun()
     
     p_carga, p_admin = st.tabs(["📥 CARGAR NUEVO ENVÍO", "🔒 ACCESO PRIVADO LOCAL"])
@@ -92,7 +92,6 @@ elif st.session_state.perfil == "Emprendedores":
                             st.cache_data.clear()
                             st.rerun()
                             
-                        # Modificado para WhatsApp en Guaraníes
                         monto_formateado = f"{int(f['Total']):,}".replace(",", ".") if f['Total'] is not None else "0"
                         txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💰 *Cobrar:* Gs. {monto_formateado}"
                         num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
@@ -155,4 +154,5 @@ elif st.session_state.perfil == "Emprendedores":
 
 elif st.session_state.perfil == "Conductores":
     if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "Inicio
+        st.session_state.perfil = "inicio_perfil"
+        st.rerun()
