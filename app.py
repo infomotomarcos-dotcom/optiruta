@@ -62,14 +62,32 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
-            monto = st.number_input("Monto TOTAL a cobrar ($) *", min_value=0.0, step=1.0)
+            
+            # Nuevos campos solicitados para desglosar el dinero
+            monto_pedido = st.number_input("Costo del Pedido ($) *", min_value=0.0, step=1.0)
+            monto_envio = st.number_input("Costo del Envío ($) *", min_value=0.0, step=1.0)
+            
             pago = st.selectbox("¿Cómo pagará al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud", use_container_width=True)
             
         if enviar and c_nom and d_dir and detalles:
-            payload = {"accion": "crear", "ID": len(df_pedidos)+1, "Cliente": f"{c_nom} ({c_tel})", "Dirección": d_dir, "Pedido": f"Para: {d_nom} - {detalles}", "Total": monto, "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": datetime.now().strftime("%H:%M"), "MetodoPago": pago}
+            # Cálculo automático en tiempo real al procesar
+            monto_total = monto_pedido + monto_envio
+            
+            payload = {
+                "accion": "crear", 
+                "ID": len(df_pedidos)+1, 
+                "Cliente": f"{c_nom} ({c_tel})", 
+                "Dirección": d_dir, 
+                "Pedido": f"Para: {d_nom} - {detalles} [Prod: ${monto_pedido} | Envío: ${monto_envio}]", 
+                "Total": monto_total, 
+                "Repartidor": "Sin Asignar", 
+                "Estado": "Pendiente", 
+                "Hora": datetime.now().strftime("%H:%M"), 
+                "MetodoPago": pago
+            }
             requests.post(API_URL, json=payload)
-            st.success("¡Envío registrado!")
+            st.success(f"¡Envío registrado con éxito! Costo Total: ${monto_total}")
             st.cache_data.clear()
             
     with p_admin:
@@ -91,7 +109,7 @@ elif st.session_state.perfil == "Emprendedores":
                             st.cache_data.clear()
                             st.rerun()
                             
-                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💰 *Cobrar:* ${f['Total']}"
+                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n📋 *Detalles:* {f['Pedido']}\n💰 *Total a Cobrar:* ${f['Total']}"
                         num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                         if num_destino:
                             col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
@@ -147,17 +165,3 @@ elif st.session_state.perfil == "Emprendedores":
                                     except:
                                         st.error("Error de comunicación con el servidor de Google Sheets.")
                         else:
-                            st.info("Este emprendedor no tiene pedidos con estado 'Entregado' pendientes de cierre hoy.")
-                    else:
-                        st.info("No se encontraron clientes registrados en la base de datos.")
-                else:
-                    st.info("No hay pedidos registrados en el sistema el día de hoy.")
-
-elif st.session_state.perfil == "Conductores":
-    if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "Inicio"
-        st.rerun()
-        
-    chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
-    if chofer != "Seleccionar...":
-        m_hoy = [m for m, c in TURNOS_DICT.items() if c == chofer]
