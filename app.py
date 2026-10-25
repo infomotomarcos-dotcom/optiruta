@@ -96,43 +96,48 @@ elif st.session_state.perfil == "Emprendedores":
         if clave == CONTRASEÑA_LOCAL:
             st.markdown("### 📦 GESTIÓN DE PEDIDOS")
             
-            # --- AGREGADO: Filtro desplegable por Emprendedor ---
+            # --- Corrección Definitiva: El filtro se muestra siempre arriba ---
+            lista_emp = ["Todos"]
             if not df_pedidos.empty:
-                 lista_emp = ["Todos"] + sorted(list(df_pedidos["Cliente"].dropna().unique()))
-                 emp_filtro = st.selectbox("Filtrar por Emprendedor / Comercio:", lista_emp)
-                 
-                 if emp_filtro != "Todos":
-                     df_visibles = df_pedidos[df_pedidos["Cliente"] == emp_filtro]
-                 else:
-                     df_visibles = df_pedidos
-            else:
-                 df_visibles = df_pedidos
-                 st.info("No hay pedidos registrados en el sistema el día de hoy.")
-            # --------------------------------------------------
+                lista_emp = ["Todos"] + sorted(list(df_pedidos["Cliente"].dropna().unique()))
             
-            for idx, f in df_visibles.iterrows():
-                with st.container():
-                    col1, col2, col3 = st.columns()
-                    col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                    
-                    val_ped = f"{int(f['MontoPedido']):,}".replace(",", ".") if ('MontoPedido' in f and pd.notna(f['MontoPedido'])) else "0"
-                    val_env = f"{int(f['Envio']):,}".replace(",", ".") if ('Envio' in f and pd.notna(f['Envio'])) else "0"
-                    val_tot = f"{int(f['Total']):,}".replace(",", ".") if pd.notna(f['Total']) else "0"
-                    
-                    col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}\n💵 *Pedido:* Gs. {val_ped} | 🏍️ *Envío:* Gs. {val_env}")
-                    
-                    m_elegida = col3.selectbox(f"Vehículo:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
-                    e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
-                    
-                    if m_elegida != f['Repartidor'] or e_elegido != f['Estado']:
-                        requests.post(API_URL, json={"accion": "actualizar_completo", "id": f['ID'], "repartidor": m_elegida, "estado": e_elegido})
-                        st.cache_data.clear()
-                        st.rerun()
+            emp_filtro = st.selectbox("Filtrar por Emprendedor / Comercio:", lista_emp)
+            
+            if not df_pedidos.empty:
+                if emp_filtro != "Todos":
+                    df_visibles = df_pedidos[df_pedidos["Cliente"] == emp_filtro]
+                else:
+                    df_visibles = df_pedidos
+            else:
+                df_visibles = pd.DataFrame()
+            # ------------------------------------------------------------------
+            
+            if df_visibles.empty:
+                st.info("No hay pedidos registrados para mostrar con los filtros seleccionados.")
+            else:
+                for idx, f in df_visibles.iterrows():
+                    with st.container():
+                        col1, col2, col3 = st.columns()
+                        col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
                         
-                    txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
-                    num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
-                    if num_destino:
-                        col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
+                        val_ped = f"{int(f['MontoPedido']):,}".replace(",", ".") if ('MontoPedido' in f and pd.notna(f['MontoPedido'])) else "0"
+                        val_env = f"{int(f['Envio']):,}".replace(",", ".") if ('Envio' in f and pd.notna(f['Envio'])) else "0"
+                        val_tot = f"{int(f['Total']):,}".replace(",", ".") if pd.notna(f['Total']) else "0"
+                        
+                        col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}\n💵 *Pedido:* Gs. {val_ped} | 🏍️ *Envío:* Gs. {val_env}")
+                        
+                        m_elegida = col3.selectbox(f"Vehículo:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
+                        e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
+                        
+                        if m_elegida != f['Repartidor'] or e_elegido != f['Estado']:
+                            requests.post(API_URL, json={"accion": "actualizar_completo", "id": f['ID'], "repartidor": m_elegida, "estado": e_elegido})
+                            st.cache_data.clear()
+                            st.rerun()
+                            
+                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
+                        num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
+                        if num_destino:
+                            col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
 elif st.session_state.perfil == "Conductores":
     if st.button("⬅️ Volver al Inicio"):
