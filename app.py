@@ -137,6 +137,31 @@ elif st.session_state.perfil == "Emprendedores":
                         if num_destino:
                             col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
+                # --- SUMA DIRECTA AUTOMÁTICA AL SELECCIONAR UN CLIENTE ---
+                if emp_filtro != "Todos":
+                    df_calc = df_visibles[df_visibles["Estado"] == "Entregado"].copy()
+                    
+                    st.markdown("---")
+                    st.markdown(f"### 📊 Rendición Acumulada: **{emp_filtro}**")
+                    
+                    if not df_calc.empty:
+                        df_calc["Total"] = df_calc["Total"].astype(float)
+                        
+                        efectivo_total = df_calc[df_calc["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum()
+                        transfe_total = df_calc[df_calc["MetodoPago"].str.contains("Transferencia", na=False)]["Total"].sum()
+                        mixto_total = df_calc[df_calc["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
+                        gran_total = df_calc["Total"].sum()
+                        
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("💵 Total Efectivo", f"Gs. {int(efectivo_total):,}".replace(",", "."))
+                        c2.metric("💳 Total Transferencia", f"Gs. {int(transfe_total):,}".replace(",", "."))
+                        c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
+                        
+                        st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
+                    else:
+                        st.info("Este comercio todavía no registra pedidos con el estado 'Entregado' el día de hoy para computar montos.")
+                # --------------------------------------------------------
+
 elif st.session_state.perfil == "Conductores":
     if st.button("⬅️ Volver al Inicio"):
         st.session_state.perfil = "Inicio"
@@ -150,19 +175,3 @@ elif st.session_state.perfil == "Conductores":
             df_m = df_pedidos[(df_pedidos["Repartidor"] == moto_asignada) & (df_pedidos["Estado"].isin(["Pendiente", "En Ruta"]))]
             if not df_m.empty:
                 for idx, f in df_m.iterrows():
-                    val_ped_m = f"{int(f['MontoPedido']):,}".replace(",", ".") if ('MontoPedido' in f and pd.notna(f['MontoPedido'])) else "0"
-                    val_env_m = f"{int(f['Envio']):,}".replace(",", ".") if ('Envio' in f and pd.notna(f['Envio'])) else "0"
-                    val_tot_m = f"{int(f['Total']):,}".replace(",", ".") if pd.notna(f['Total']) else "0"
-                    
-                    st.markdown(f"#### 📍 Orden #{f['ID']}")
-                    st.markdown(f"📦 *Pedido:* Gs. {val_ped_m} | 🏍️ *Envío:* Gs. {val_env_m}")
-                    st.markdown(f"### **Cobrar Total: Gs. {val_tot_m}**")
-                    
-                    if st.button(f"✅ Confirmar Entrega #{f['ID']}", use_container_width=True):
-                        requests.post(API_URL, json={"accion": "actualizar_entrega_moto", "id": f['ID'], "estado": "Entregado", "metodo_real": f['MetodoPago']})
-                        st.cache_data.clear()
-                        st.rerun()
-            else:
-                st.info("No tienes pedidos pendientes o en ruta asignados para hoy.")
-        else:
-            st.warning("No tienes ninguna moto asignada en los turnos de hoy.")
