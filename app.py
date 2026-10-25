@@ -64,7 +64,6 @@ elif st.session_state.perfil == "Emprendedores":
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
             
-            # Los 3 campos requeridos ordenados limpiamente
             m_pedido = st.number_input("Monto del Pedido (Gs.) *", min_value=0, step=1000, value=0)
             m_envio = st.number_input("Monto del Envío / Flete (Gs.) *", min_value=0, step=1000, value=0)
             
@@ -162,3 +161,4 @@ elif st.session_state.perfil == "Emprendedores":
                                     payload_cierre = {
                                         "accion": "cierre_caja",
                                         "emprendedor": emp_seleccionado,
+                                        "total_rendido": gran_total,
