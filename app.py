@@ -35,9 +35,9 @@ for col in columnas_base:
         df_pedidos[col] = None
 
 if "perfil" not in st.session_state:
-    st.session_state.perfil = "inicio_perfil"
+    st.session_state.perfil = "Inicio"
 
-if st.session_state.perfil == "inicio_perfil":
+if st.session_state.perfil == "Inicio":
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 OptiRuta Delivery</h1>", unsafe_allow_html=True)
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
@@ -51,7 +51,7 @@ if st.session_state.perfil == "inicio_perfil":
 
 elif st.session_state.perfil == "Emprendedores":
     if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "inicio_perfil"
+        st.session_state.perfil = "Inicio"
         st.rerun()
     
     p_carga, p_admin = st.tabs(["📥 CARGAR NUEVO ENVÍO", "🔒 ACCESO PRIVADO LOCAL"])
@@ -64,7 +64,7 @@ elif st.session_state.perfil == "Emprendedores":
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
             
-            # Aquí se cambiaron los campos para que aparezcan separados correctamente
+            # Los 3 campos requeridos ordenados limpiamente
             m_pedido = st.number_input("Monto del Pedido (Gs.) *", min_value=0, step=1000, value=0)
             m_envio = st.number_input("Monto del Envío / Flete (Gs.) *", min_value=0, step=1000, value=0)
             
