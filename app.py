@@ -13,28 +13,31 @@ CONTRASEÑA_LOCAL = "1234"
 
 # --- 10 DATOS FALSOS PARAGUAYOS PARA REVISAR EL FUNCIONAMIENTO ---
 df_pedidos = pd.DataFrame([
-    {"ID": 1, "Cliente": "Novedades Juanita", "Dirección": "Av. Mariscal López 1450", "Pedido": "Para: María - Ropa", "Estado": "Entregado", "MontoPedido": 150000, "Envio": 15000, "Total": 165000, "MetodoPago": "Efectivo", "Hora": "10:30", "Repartidor": "Moto 1"},
-    {"ID": 2, "Cliente": "Novedades Juanita", "Dirección": "Calle Palma esq. Chile", "Pedido": "Para: Pedro - Reloj", "Estado": "Entregado", "MontoPedido": 85000, "Envio": 15000, "Total": 100000, "MetodoPago": "Transferencia", "Hora": "11:15", "Repartidor": "Moto 2"},
+    {"ID": 1, "Cliente": "Novedades Juanita", "Dirección": "Av. Mariscal López 1450", "Pedido": "Para: María - Ropa", "Estado": "En Ruta", "MontoPedido": 150000, "Envio": 15000, "Total": 165000, "MetodoPago": "Efectivo", "Hora": "10:30", "Repartidor": "Moto 1"},
+    {"ID": 2, "Cliente": "Novedades Juanita", "Dirección": "Calle Palma esq. Chile", "Pedido": "Para: Pedro - Reloj", "Estado": "Pendiente", "MontoPedido": 85000, "Envio": 15000, "Total": 100000, "MetodoPago": "Transferencia", "Hora": "11:15", "Repartidor": "Moto 2"},
     {"ID": 3, "Cliente": "Novedades Juanita", "Dirección": "Aviadores del Chaco 2200", "Pedido": "Para: Ana - Cartera", "Estado": "Pendiente", "MontoPedido": 300000, "Envio": 20000, "Total": 320000, "MetodoPago": "Efectivo", "Hora": "14:00", "Repartidor": "Sin Asignar"},
-    {"ID": 4, "Cliente": "Hamburguesería El Bajón", "Dirección": "Sajonia - Carlos A. López", "Pedido": "Para: Luis - 2 Combos", "Estado": "Entregado", "MontoPedido": 45000, "Envio": 10000, "Total": 55000, "MetodoPago": "Efectivo", "Hora": "20:15", "Repartidor": "Moto 1"},
-    {"ID": 5, "Cliente": "Hamburguesería El Bajón", "Dirección": "Villa Morra - Mcal Estigarribia", "Pedido": "Para: Fernando - Lomito", "Estado": "Entregado", "MontoPedido": 120000, "Envio": 12000, "Total": 132000, "MetodoPago": "Mixto (Efectivo + Transferencia)", "Hora": "21:00", "Repartidor": "Moto 3"},
-    {"ID": 6, "Cliente": "Farmacia San Blas", "Dirección": "Fernando de la Mora esq. 1ro de Mayo", "Pedido": "Para: Gabriela - Remedios", "Estado": "Entregado", "MontoPedido": 210000, "Envio": 15000, "Total": 225000, "MetodoPago": "Transferencia", "Hora": "16:45", "Repartidor": "Moto 2"},
-    {"ID": 7, "Cliente": "Farmacia San Blas", "Dirección": "Luque - Centro", "Pedido": "Para: Roque - Pañales", "Estado": "Entregado", "MontoPedido": 95000, "Envio": 15000, "Total": 110000, "MetodoPago": "Efectivo", "Hora": "17:30", "Repartidor": "Moto 1"},
-    {"ID": 8, "Cliente": "Pizzería La Bella", "Dirección": "San Lorenzo - UNA", "Pedido": "Para: Carlos - Pizza Familiar", "Estado": "Entregado", "MontoPedido": 70000, "Envio": 12000, "Total": 82000, "MetodoPago": "Efectivo", "Hora": "19:40", "Repartidor": "Moto 3"},
+    {"ID": 4, "Cliente": "Hamburguesería El Bajón", "Dirección": "Sajonia - Carlos A. López", "Pedido": "Para: Luis - 2 Combos", "Estado": "En Ruta", "MontoPedido": 45000, "Envio": 10000, "Total": 55000, "MetodoPago": "Efectivo", "Hora": "20:15", "Repartidor": "Moto 1"},
+    {"ID": 5, "Cliente": "Hamburguesería El Bajón", "Dirección": "Villa Morra - Mcal Estigarribia", "Pedido": "Para: Fernando - Lomito", "Estado": "En Ruta", "MontoPedido": 120000, "Envio": 12000, "Total": 132000, "MetodoPago": "Mixto (Efectivo + Transferencia)", "Hora": "21:00", "Repartidor": "Moto 3"},
+    {"ID": 6, "Cliente": "Farmacia San Blas", "Dirección": "Fernando de la Mora esq. 1ro de Mayo", "Pedido": "Para: Gabriela - Remedios", "Estado": "En Ruta", "MontoPedido": 210000, "Envio": 15000, "Total": 225000, "MetodoPago": "Transferencia", "Hora": "16:45", "Repartidor": "Moto 2"},
+    {"ID": 7, "Cliente": "Farmacia San Blas", "Dirección": "Luque - Centro", "Pedido": "Para: Roque - Pañales", "Estado": "Pendiente", "MontoPedido": 95000, "Envio": 15000, "Total": 110000, "MetodoPago": "Efectivo", "Hora": "17:30", "Repartidor": "Moto 1"},
+    {"ID": 8, "Cliente": "Pizzería La Bella", "Dirección": "San Lorenzo - UNA", "Pedido": "Para: Carlos - Pizza Familiar", "Estado": "En Ruta", "MontoPedido": 70000, "Envio": 12000, "Total": 82000, "MetodoPago": "Efectivo", "Hora": "19:40", "Repartidor": "Moto 3"},
     {"ID": 9, "Cliente": "Pizzería La Bella", "Dirección": "Lambaré - Av. Cacique", "Pedido": "Para: Diego - 2 Pizzas Medianas", "Estado": "Pendiente", "MontoPedido": 110000, "Envio": 15000, "Total": 125000, "MetodoPago": "Transferencia", "Hora": "20:00", "Repartidor": "Sin Asignar"},
     {"ID": 10, "Cliente": "Comercial San Cayetano", "Dirección": "Mariano Roque Alonso", "Pedido": "Para: Sol - Pack de Gaseosas", "Estado": "Cancelado", "MontoPedido": 180000, "Envio": 25000, "Total": 205000, "MetodoPago": "Efectivo", "Hora": "12:10", "Repartidor": "Moto 2"},
 ])
 
+# --- MODIFICADO: 3 CONDUCTORES Y ASIGNACIONES DE MOTOS FIJAS ---
 df_conductores = pd.DataFrame([
     {"Nombre": "Juan Pérez", "Telefono": "595981111111"},
-    {"Nombre": "Carlos Gómez", "Telefono": "595982222222"}
+    {"Nombre": "Carlos Gómez", "Telefono": "595982222222"},
+    {"Nombre": "Lucas Benítez", "Telefono": "595983333333"}
 ])
 
 df_turnos = pd.DataFrame([
     {"Moto": "Moto 1", "Conductor": "Juan Pérez"},
     {"Moto": "Moto 2", "Conductor": "Carlos Gómez"},
-    {"Moto": "Moto 3", "Conductor": "Sin Asignar"}
+    {"Moto": "Moto 3", "Conductor": "Lucas Benítez"}
 ])
+# -----------------------------------------------------------------
 
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str)))
 TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str)))
@@ -133,5 +136,3 @@ elif st.session_state.perfil == "Emprendedores":
                     st.markdown(f"### **Monto Neto Entregado Hoy:** `Gs. {int(gran_total):,}`".replace(",", "."))
                     
                     with st.form("f_cierre_seguro", clear_on_submit=True):
-                        obs = st.text_input("Notas u Observaciones del Arqueo")
-                        btn_guardar_cierre = st.form_submit_button("🔒 Archivar Cierre de Caja", use_container_width=True, type="primary")
