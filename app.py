@@ -29,7 +29,7 @@ df_pedidos, df_conductores, df_turnos = obtener_datos_sistema()
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str))) if not df_conductores.empty else {}
 TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str))) if not df_turnos.empty else {}
 
-columnas_base = ["ID", "Cliente", "Dirección", "Pedido", "Total", "Repartidor", "Estado", "Hora", "MetodoPago"]
+columnas_base = ["ID", "Cliente", "Dirección", "Pedido", "MontoPedido", "Envio", "Total", "Repartidor", "Estado", "Hora", "MetodoPago"]
 for col in columnas_base:
     if df_pedidos.empty or col not in df_pedidos.columns:
         df_pedidos[col] = None
@@ -63,15 +63,34 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
-            monto = st.number_input("Monto TOTAL a cobrar (Gs.) *", min_value=0, step=1000)
+            
+            # Aquí se cambiaron los campos para que aparezcan separados correctamente
+            m_pedido = st.number_input("Monto del Pedido (Gs.) *", min_value=0, step=1000, value=0)
+            m_envio = st.number_input("Monto del Envío / Flete (Gs.) *", min_value=0, step=1000, value=0)
+            
             pago = st.selectbox("¿Cómo pagará al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud", use_container_width=True)
             
         if enviar and c_nom and d_dir and detalles:
-            payload = {"accion": "crear", "ID": len(df_pedidos)+1, "Cliente": f"{c_nom} ({c_tel})", "Dirección": d_dir, "Pedido": f"Para: {d_nom} - {detalles}", "Total": monto, "Repartidor": "Sin Asignar", "Estado": "Pendiente", "Hora": datetime.now().strftime("%H:%M"), "MetodoPago": pago}
+            gran_total_calculado = m_pedido + m_envio
+            payload = {
+                "accion": "crear", 
+                "ID": len(df_pedidos)+1, 
+                "Cliente": f"{c_nom} ({c_tel})", 
+                "Dirección": d_dir, 
+                "Pedido": f"Para: {d_nom} - {detalles}", 
+                "MontoPedido": m_pedido,
+                "Envio": m_envio,
+                "Total": gran_total_calculado, 
+                "Repartidor": "Sin Asignar", 
+                "Estado": "Pendiente", 
+                "Hora": datetime.now().strftime("%H:%M"), 
+                "MetodoPago": pago
+            }
             requests.post(API_URL, json=payload)
-            st.success("¡Envío registrado!")
+            st.success("¡Envío registrado exitosamente!")
             st.cache_data.clear()
+            st.rerun()
             
     with p_admin:
         clave = st.text_input("Introduce la clave del local:", type="password")
@@ -83,7 +102,13 @@ elif st.session_state.perfil == "Emprendedores":
                     with st.container():
                         col1, col2, col3 = st.columns()
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
-                        col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}")
+                        
+                        val_ped = f"{int(f['MontoPedido']):,}".replace(",", ".") if ('MontoPedido' in f and pd.notna(f['MontoPedido'])) else "0"
+                        val_env = f"{int(f['Envio']):,}".replace(",", ".") if ('Envio' in f and pd.notna(f['Envio'])) else "0"
+                        val_tot = f"{int(f['Total']):,}".replace(",", ".") if pd.notna(f['Total']) else "0"
+                        
+                        col2.markdown(f"👤 **{f['Cliente']}**\n📍 {f['Dirección']}\n📦 {f['Pedido']}\n💵 *Pedido:* Gs. {val_ped} | 🏍️ *Envío:* Gs. {val_env}")
+                        
                         m_elegida = col3.selectbox(f"Vehículo:", ["Sin Asignar"] + MOTOS_FIJAS, index=(["Sin Asignar"] + MOTOS_FIJAS).index(f['Repartidor']) if f['Repartidor'] in (["Sin Asignar"] + MOTOS_FIJAS) else 0, key=f"m_{f['ID']}")
                         e_elegido = col3.selectbox(f"Estado:", ["Pendiente", "En Ruta", "Entregado", "Cancelado"], index=["Pendiente", "En Ruta", "Entregado", "Cancelado"].index(f['Estado']) if f['Estado'] in ["Pendiente", "En Ruta", "Entregado", "Cancelado"] else 0, key=f"e_{f['ID']}")
                         
@@ -92,8 +117,7 @@ elif st.session_state.perfil == "Emprendedores":
                             st.cache_data.clear()
                             st.rerun()
                             
-                        monto_formateado = f"{int(f['Total']):,}".replace(",", ".") if f['Total'] is not None else "0"
-                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💰 *Cobrar:* Gs. {monto_formateado}"
+                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💵 *Pedido:* Gs. {val_ped}\n🏍️ *Envío:* Gs. {val_env}\n💰 *TOTAL A COBRAR:* Gs. {val_tot}"
                         num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                         if num_destino:
                             col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
@@ -108,7 +132,10 @@ elif st.session_state.perfil == "Emprendedores":
                         
                         if not df_emp.empty:
                             st.markdown(f"#### Pedidos Entregados de: `{emp_seleccionado}`")
-                            df_resumen = df_emp[["ID", "Hora", "Pedido", "Total", "MetodoPago"]].copy()
+                            
+                            columnas_mostrar = ["ID", "Hora", "Pedido", "MontoPedido", "Envio", "Total", "MetodoPago"]
+                            columnas_existentes = [c for c in columnas_mostrar if c in df_emp.columns]
+                            df_resumen = df_emp[columnas_existentes].copy()
                             df_resumen["Total"] = df_resumen["Total"].astype(float)
                             st.dataframe(df_resumen, use_container_width=True, hide_index=True)
                             
@@ -135,24 +162,3 @@ elif st.session_state.perfil == "Emprendedores":
                                     payload_cierre = {
                                         "accion": "cierre_caja",
                                         "emprendedor": emp_seleccionado,
-                                        "total_rendido": gran_total,
-                                        "observaciones": observaciones,
-                                        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
-                                    }
-                                    try:
-                                        requests.post(API_URL, json=payload_cierre)
-                                        st.success(f"¡Cierre de caja archivado con éxito para {emp_seleccionado}!")
-                                        st.cache_data.clear()
-                                    except:
-                                        st.error("Error de comunicación con el servidor de Google Sheets.")
-                        else:
-                            st.info("Este emprendedor no tiene pedidos con estado 'Entregado' pendientes de cierre hoy.")
-                    else:
-                        st.info("No se encontraron clientes registrados en la base de datos.")
-                else:
-                    st.info("No hay pedidos registrados en el sistema el día de hoy.")
-
-elif st.session_state.perfil == "Conductores":
-    if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "inicio_perfil"
-        st.rerun()
