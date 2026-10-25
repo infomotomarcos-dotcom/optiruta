@@ -171,7 +171,8 @@ elif st.session_state.perfil == "Emprendedores":
                                 "observaciones": obs,
                                 "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
                             }
-                            try:
-                                requests.post(API_URL, json=pld_cierre)
-                                st.success(f"¡Cierre guardado correctamente para {emp_filtro}!")
-                                st.cache_data.clear()
+                            requests.post(API_URL, json=pld_cierre)
+                            st.success(f"¡Cierre guardado correctamente para {emp_filtro}!")
+                            st.cache_data.clear()
+                            st.rerun()
+                else:
