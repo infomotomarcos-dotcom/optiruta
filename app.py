@@ -110,7 +110,6 @@ elif st.session_state.perfil == "Emprendedores":
                 
                 for idx, f in df_visibles.iterrows():
                     with st.container():
-                        # --- CORREGIDO: Se añadió el número 3 dentro de st.columns() ---
                         col1, col2, col3 = st.columns(3)
                         col1.markdown(f"### `#{f['ID']}`\n⏱️ {f['Hora']}")
                         
@@ -154,3 +153,5 @@ elif st.session_state.perfil == "Emprendedores":
                         obs = st.text_input("Notas u Observaciones del Arqueo")
                         btn_guardar_cierre = st.form_submit_button("🔒 Archivar Cierre de Caja", use_container_width=True, type="primary")
                         if btn_guardar_cierre:
+                            st.success(f"¡Cierre simulado correctamente para {emp_cierre}!")
+                else:
