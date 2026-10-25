@@ -63,7 +63,6 @@ elif st.session_state.perfil == "Emprendedores":
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
             
-            # Segmentación de costos nueva
             monto_pedido = st.number_input("Costo del Pedido ($) *", min_value=0.0, step=1.0)
             monto_envio = st.number_input("Costo del Envío ($) *", min_value=0.0, step=1.0)
             
