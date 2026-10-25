@@ -75,8 +75,6 @@ elif st.session_state.perfil == "Emprendedores":
     with p_admin:
         clave = st.text_input("Introduce la clave del local:", type="password")
         if clave == CONTRASEÑA_LOCAL:
-            
-            # Sub-pestañas internas dentro de la administración privada
             p_pedidos, p_cierre = st.tabs(["📦 GESTIÓN DE PEDIDOS", "💰 CIERRE DE CAJA"])
             
             with p_pedidos:
@@ -102,28 +100,22 @@ elif st.session_state.perfil == "Emprendedores":
                 st.markdown("### Rendición de Cuentas por Emprendedor")
                 
                 if not df_pedidos.empty:
-                    # Extraer la lista única de emprendedores que tienen registros
                     lista_emprendedores = sorted(list(df_pedidos["Cliente"].dropna().unique()))
                     
                     if lista_emprendedores:
                         emp_seleccionado = st.selectbox("Selecciona el Emprendedor / Comercio:", lista_emprendedores)
-                        
-                        # Filtrar pedidos entregados del emprendedor seleccionado
                         df_emp = df_pedidos[(df_pedidos["Cliente"] == emp_seleccionado) & (df_pedidos["Estado"] == "Entregado")]
                         
                         if not df_emp.empty:
                             st.markdown(f"#### Pedidos Entregados de: `{emp_seleccionado}`")
                             
-                            # Mostrar tabla resumen compacta
                             df_resumen = df_emp[["ID", "Hora", "Pedido", "Total", "MetodoPago"]].copy()
                             df_resumen["Total"] = df_resumen["Total"].astype(float)
                             st.dataframe(df_resumen, use_container_width=True, hide_index=True)
                             
-                            # Cálculos de Cierre por método de pago
                             efectivo_total = df_resumen[df_resumen["MetodoPago"].str.contains("Efectivo", na=False)]["Total"].sum()
                             transfe_total = df_resumen[df_resumen["MetodoPago"].str.contains("Transferencia", na=False)]["Total"].sum()
                             mixto_total = df_resumen[df_resumen["MetodoPago"].str.contains("Mixto", na=False)]["Total"].sum()
-                            sin_cobro = df_resumen[df_resumen["MetodoPago"].str.contains("Ya pagado", na=False)]["Total"].sum()
                             gran_total = df_resumen["Total"].sum()
                             
                             st.markdown("---")
@@ -134,15 +126,13 @@ elif st.session_state.perfil == "Emprendedores":
                             c2.metric("💳 Total Transferencia", f"${transfe_total:,.0f}")
                             c3.metric("🔀 Total Mixto", f"${mixto_total:,.0f}")
                             
-                            st.markdown(f"**Total General Entregado (Incluye sin cobro):** `${gran_total:,.0f}`")
+                            st.markdown(f"**Total General Entregado:** `${gran_total:,.0f}`")
                             
-                            # Formulario para procesar el cierre
                             with st.form("f_cierre_caja"):
                                 observaciones = st.text_input("Observaciones o Notas del Cierre")
                                 btn_cierre = st.form_submit_button("🔒 Procesar y Archivar Cierre de Caja", use_container_width=True, type="primary")
                                 
                                 if btn_cierre:
-                                    # Formato de payload por si deseas registrar el cierre en tu Google Sheets (Apps Script)
                                     payload_cierre = {
                                         "accion": "cierre_caja",
                                         "emprendedor": emp_seleccionado,
@@ -150,8 +140,23 @@ elif st.session_state.perfil == "Emprendedores":
                                         "observaciones": observaciones,
                                         "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
                                     }
-                                    # Enviar datos al webhook
                                     try:
                                         requests.post(API_URL, json=payload_cierre)
                                         st.success(f"¡Cierre de caja archivado con éxito para {emp_seleccionado}!")
+                                        st.cache_data.clear()
                                     except:
+                                        st.error("Error de comunicación con el servidor de Google Sheets.")
+                        else:
+                            st.info("Este emprendedor no tiene pedidos con estado 'Entregado' pendientes de cierre hoy.")
+                    else:
+                        st.info("No se encontraron clientes registrados en la base de datos.")
+                else:
+                    st.info("No hay pedidos registrados en el sistema el día de hoy.")
+
+elif st.session_state.perfil == "Conductores":
+    if st.button("⬅️ Volver al Inicio"):
+        st.session_state.perfil = "Inicio"
+        st.rerun()
+        
+    chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
+    if chofer != "Seleccionar...":
