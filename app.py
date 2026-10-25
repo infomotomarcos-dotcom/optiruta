@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="OptiRuta Delivery", page_icon="🚀", layout="centered")
 
-API_URL = "https://script.google.com/macros/s/AKfycbzDUvQoihxug2WCTECv6vinsLIP-caVsx1gpo_DlSTXKfnIZjl_HASHfB7k8zPeiY4/exec"
+API_URL = "https://google.com"
 METODOS_PAGO = ["Efectivo", "Transferencia", "Mixto (Efectivo + Transferencia)", "Ya pagado / Sin cobro"]
 MOTOS_FIJAS = ["Moto 1", "Moto 2", "Moto 3"]
 CONTRASEÑA_LOCAL = "1234"
@@ -25,6 +25,7 @@ def obtener_datos_sistema():
     return pd.DataFrame(), df_c_mock, df_t_mock
 
 df_pedidos, df_conductores, df_turnos = obtener_datos_sistema()
+
 CONDUCTORES_DICT = dict(zip(df_conductores["Nombre"].astype(str), df_conductores["Telefono"].astype(str))) if not df_conductores.empty else {}
 TURNOS_DICT = dict(zip(df_turnos["Moto"].astype(str), df_turnos["Conductor"].astype(str))) if not df_turnos.empty else {}
 
@@ -62,7 +63,7 @@ elif st.session_state.perfil == "Emprendedores":
             d_nom = st.text_input("Nombre de quién recibe *")
             d_dir = st.text_input("Dirección Exacta de Entrega *")
             detalles = st.text_area("Contenido del paquete *")
-            monto = st.number_input("Monto TOTAL a cobrar ($) *", min_value=0.0, step=1.0)
+            monto = st.number_input("Monto TOTAL a cobrar (Gs.) *", min_value=0, step=1000)
             pago = st.selectbox("¿Cómo pagará al llegar? *", METODOS_PAGO)
             enviar = st.form_submit_button("🚀 Enviar Solicitud", use_container_width=True)
             
@@ -91,24 +92,23 @@ elif st.session_state.perfil == "Emprendedores":
                             st.cache_data.clear()
                             st.rerun()
                             
-                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💰 *Cobrar:* ${f['Total']}"
+                        # Modificado para WhatsApp en Guaraníes
+                        monto_formateado = f"{int(f['Total']):,}".replace(",", ".") if f['Total'] is not None else "0"
+                        txt_wa = f"*🚀 OPTIRUTA*\n📦 *Orden:* #{f['ID']}\n📍 *Destino:* {f['Dirección']}\n💰 *Cobrar:* Gs. {monto_formateado}"
                         num_destino = CONDUCTORES_DICT.get(TURNOS_DICT.get(m_elegida, ""), "")
                         if num_destino:
-                            col3.link_button("📲 Despachar", f"https://wa.me/{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
-
+                            col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
+            
             with p_cierre:
                 st.markdown("### Rendición de Cuentas por Emprendedor")
-                
                 if not df_pedidos.empty:
                     lista_emprendedores = sorted(list(df_pedidos["Cliente"].dropna().unique()))
-                    
                     if lista_emprendedores:
                         emp_seleccionado = st.selectbox("Selecciona el Emprendedor / Comercio:", lista_emprendedores)
                         df_emp = df_pedidos[(df_pedidos["Cliente"] == emp_seleccionado) & (df_pedidos["Estado"] == "Entregado")]
                         
                         if not df_emp.empty:
                             st.markdown(f"#### Pedidos Entregados de: `{emp_seleccionado}`")
-                            
                             df_resumen = df_emp[["ID", "Hora", "Pedido", "Total", "MetodoPago"]].copy()
                             df_resumen["Total"] = df_resumen["Total"].astype(float)
                             st.dataframe(df_resumen, use_container_width=True, hide_index=True)
@@ -122,11 +122,11 @@ elif st.session_state.perfil == "Emprendedores":
                             st.markdown("### 📊 Resumen Financiero de Caja")
                             
                             c1, c2, c3 = st.columns(3)
-                            c1.metric("💵 Total Efectivo", f"${efectivo_total:,.0f}")
-                            c2.metric("💳 Total Transferencia", f"${transfe_total:,.0f}")
-                            c3.metric("🔀 Total Mixto", f"${mixto_total:,.0f}")
+                            c1.metric("💵 Total Efectivo", f"Gs. {int(efectivo_total):,}".replace(",", "."))
+                            c2.metric("💳 Total Transferencia", f"Gs. {int(transfe_total):,}".replace(",", "."))
+                            c3.metric("🔀 Total Mixto", f"Gs. {int(mixto_total):,}".replace(",", "."))
                             
-                            st.markdown(f"**Total General Entregado:** `${gran_total:,.0f}`")
+                            st.markdown(f"**Total General Entregado:** `Gs. {int(gran_total):,}`".replace(",", "."))
                             
                             with st.form("f_cierre_caja"):
                                 observaciones = st.text_input("Observaciones o Notas del Cierre")
@@ -155,23 +155,4 @@ elif st.session_state.perfil == "Emprendedores":
 
 elif st.session_state.perfil == "Conductores":
     if st.button("⬅️ Volver al Inicio"):
-        st.session_state.perfil = "Inicio"
-        st.rerun()
-        
-    chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
-    if chofer != "Seleccionar...":
-        m_hoy = [m for m, c in TURNOS_DICT.items() if c == chofer]
-        if m_hoy:
-            moto_asignada = m_hoy[0]
-            df_m = df_pedidos[(df_pedidos["Repartidor"] == moto_asignada) & (df_pedidos["Estado"].isin(["Pendiente", "En Ruta"]))]
-            if not df_m.empty:
-                for idx, f in df_m.iterrows():
-                    st.markdown(f"#### 📍 Orden #{f['ID']} — Cobrar: `${f['Total']}`")
-                    if st.button(f"✅ Confirmar Entrega #{f['ID']}", use_container_width=True):
-                        requests.post(API_URL, json={"accion": "actualizar_entrega_moto", "id": f['ID'], "estado": "Entregado", "metodo_real": f['MetodoPago']})
-                        st.cache_data.clear()
-                        st.rerun()
-            else:
-                st.info("No tienes pedidos pendientes o en ruta asignados para hoy.")
-        else:
-            st.warning("No tienes ninguna moto asignada en los turnos de hoy.")
+        st.session_state.perfil = "Inicio
