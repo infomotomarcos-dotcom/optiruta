@@ -160,3 +160,4 @@ elif st.session_state.perfil == "Conductores":
         
     chofer = st.selectbox("Selecciona tu nombre:", ["Seleccionar..."] + list(CONDUCTORES_DICT.keys()))
     if chofer != "Seleccionar...":
+        m_hoy = [m for m, c in TURNOS_DICT.items() if c == chofer]
