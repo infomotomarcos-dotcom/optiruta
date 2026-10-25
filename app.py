@@ -137,7 +137,6 @@ elif st.session_state.perfil == "Emprendedores":
                         if num_destino:
                             col3.link_button("📲 Despachar", f"https://wa.me{num_destino}?text={urllib.parse.quote(txt_wa)}", use_container_width=True, type="primary")
 
-            # --- NUEVO AGREGADO: Cierre de caja integrado al seleccionar un cliente ---
             if emp_filtro != "Todos" and not df_pedidos.empty:
                 st.markdown("---")
                 st.markdown(f"### 💰 Cierre de Caja: {emp_filtro}")
@@ -174,3 +173,5 @@ elif st.session_state.perfil == "Emprendedores":
                             }
                             try:
                                 requests.post(API_URL, json=pld_cierre)
+                                st.success(f"¡Cierre guardado correctamente para {emp_filtro}!")
+                                st.cache_data.clear()
