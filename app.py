@@ -32,10 +32,54 @@ st.markdown("""
     background: #F3F7FC !important;
     border-right: 2px solid #D5A629 !important;
 }
-html, body, [class*="css"] { color: #17212F !important; }
-h1, h2, h3, h4, p, label, span, div { color: inherit; }
-h1, h2, h3 { color: #153F78 !important; font-weight: 800 !important; }
-.stCaption, [data-testid="stCaptionContainer"] { color: #3F4B5B !important; }
+/* Texto general: forzar colores oscuros para que no desaparezcan sobre blanco. */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"],
+[data-testid="stMain"] p, [data-testid="stMain"] li {
+    color: #17212F !important;
+}
+h1, h2, h3, h4,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3 {
+    color: #153F78 !important;
+    font-weight: 800 !important;
+}
+/* Etiquetas de TODOS los campos: texto oscuro y legible. */
+[data-testid="stWidgetLabel"],
+[data-testid="stWidgetLabel"] *,
+[data-testid="stWidgetLabel"] p,
+.stTextInput label, .stTextArea label, .stNumberInput label,
+.stSelectbox label, .stMultiSelect label, .stDateInput label,
+.stTimeInput label, .stRadio label, .stCheckbox label,
+.stSlider label, .stFileUploader label,
+[data-testid="stForm"] label,
+[data-testid="stForm"] label *,
+[data-testid="stMarkdownContainer"] p {
+    color: #17212F !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
+}
+/* Texto escrito, opciones y valores seleccionados. */
+input, textarea,
+[data-baseweb="select"] *,
+[data-baseweb="input"] *,
+[data-baseweb="textarea"] *,
+[data-testid="stDateInput"] input {
+    background-color: #FFFFFF !important;
+    color: #17212F !important;
+    -webkit-text-fill-color: #17212F !important;
+    opacity: 1 !important;
+}
+input::placeholder, textarea::placeholder {
+    color: #596579 !important;
+    -webkit-text-fill-color: #596579 !important;
+    opacity: 1 !important;
+}
+.stCaption, [data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] * {
+    color: #3F4B5B !important;
+    opacity: 1 !important;
+}
 div.stButton > button, div.stFormSubmitButton > button, .stLinkButton a {
     background: #174A91 !important;
     color: #FFFFFF !important;
@@ -192,6 +236,7 @@ if not st.session_state.user:
         }
         st.divider()
         st.subheader(portal_names[st.session_state.portal])
+        st.markdown("### 🔐 Ingresá tus datos de acceso")
         with st.form("login_form"):
             username = st.text_input("Usuario")
             password = st.text_input("Contraseña", type="password")
@@ -254,6 +299,7 @@ if role == "ADMIN":
         entrepreneurs = rows("EMPRENDEDORES")
         drivers = rows("CONDUCTORES")
         motos = rows("MOTOS")
+        st.markdown("### 🧾 Datos del nuevo pedido")
         with st.form("new_order"):
             em_options = {
                 f"{x.get('Nombre_Comercial')} ({x.get('ID_Emprendedor')})": x.get("ID_Emprendedor")
@@ -306,6 +352,7 @@ if role == "ADMIN":
             moto_map = {f"{m.get('Descripcion')} ({m.get('ID_Moto')})": m.get("ID_Moto") for m in active_motos}
             current_driver_label = next((k for k, v in driver_map.items() if str(v) == str(chosen.get("ID_Conductor", ""))), "")
             current_moto_label = next((k for k, v in moto_map.items() if str(v) == str(chosen.get("ID_Moto", ""))), "")
+            st.markdown("### 🛵 Datos de asignación y estado")
             with st.form("assign"):
                 dl = st.selectbox("Conductor", [""] + list(driver_map), index=(1 + list(driver_map).index(current_driver_label)) if current_driver_label else 0)
                 ml = st.selectbox("Moto", [""] + list(moto_map), index=(1 + list(moto_map).index(current_moto_label)) if current_moto_label else 0)
@@ -324,6 +371,7 @@ if role == "ADMIN":
 
     elif section == "Emprendedores":
         st.subheader("Emprendedores")
+        st.markdown("### 🏪 Datos del emprendedor")
         with st.form("entrepreneur"):
             name = st.text_input("Nombre comercial")
             phone = st.text_input("Teléfono de contacto")
@@ -335,6 +383,7 @@ if role == "ADMIN":
 
     elif section == "Conductores":
         st.subheader("Conductores")
+        st.markdown("### 👤 Datos del conductor")
         with st.form("driver"):
             name = st.text_input("Nombre completo")
             phone = st.text_input("Teléfono", key="driver_phone")
@@ -344,6 +393,7 @@ if role == "ADMIN":
 
     elif section == "Motos":
         st.subheader("Motos")
+        st.markdown("### 🏍️ Datos de la moto")
         with st.form("bike"):
             desc = st.text_input("Descripción / modelo")
             plate = st.text_input("Patente")
@@ -359,6 +409,7 @@ if role == "ADMIN":
         st.subheader("Registrar transferencia recibida del emprendedor")
         ems = rows("EMPRENDEDORES")
         emmap = {f"{e.get('Nombre_Comercial')} ({e.get('ID_Emprendedor')})": e.get("ID_Emprendedor") for e in ems}
+        st.markdown("### 💳 Datos de la transferencia")
         with st.form("transfer_in"):
             emlabel = st.selectbox("Emprendedor", list(emmap) or [""])
             amount = st.number_input("Monto recibido (Gs.)", min_value=0, step=1000)
@@ -379,6 +430,7 @@ if role == "ADMIN":
 
     elif section == "Usuarios":
         st.subheader("Crear acceso")
+        st.markdown("### 🔑 Datos del nuevo usuario")
         with st.form("user_create"):
             uname = st.text_input("Usuario nuevo")
             pwd = st.text_input("Contraseña inicial", type="password")
@@ -394,6 +446,7 @@ if role == "ADMIN":
 elif role == "EMPRENDEDOR":
     brand_header("Portal privado del emprendedor")
     st.title("Cargar un pedido")
+    st.markdown("### 📦 Información del pedido")
     with st.form("entrepreneur_order"):
         customer = st.text_input("Nombre del cliente")
         phone = st.text_input("Teléfono")
