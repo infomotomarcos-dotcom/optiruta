@@ -451,6 +451,11 @@ elif role == "EMPRENDEDOR":
         customer = st.text_input("Nombre del cliente")
         phone = st.text_input("Teléfono")
         address = st.text_input("Dirección de entrega")
+        maps_location = st.text_input(
+            "Ubicación de Google Maps (pegá el enlace compartido)",
+            placeholder="https://maps.app.goo.gl/..."
+        )
+        st.caption("En Google Maps: abrí la ubicación del cliente, tocá Compartir y copiá el enlace.")
         description = st.text_input("Descripción del pedido")
         a, b, c = st.columns(3)
         product = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000)
@@ -462,7 +467,8 @@ elif role == "EMPRENDEDOR":
             record = {
                 "ID_Pedido": "", "Fecha_Carga": datetime.now().isoformat(timespec="seconds"),
                 "ID_Emprendedor": uid, "Nombre_Cliente": customer, "Telefono_Cliente": phone,
-                "Direccion_Entrega": address, "Descripcion_Pedido": description,
+                "Direccion_Entrega": address, "Ubicacion_Google_Maps": maps_location.strip(),
+                "Descripcion_Pedido": description,
                 "Costo_Producto": int(product), "Costo_Envio": int(shipping), "Total_Cobrar": total,
                 "Metodo_Pago": method, "Monto_Anticipado": int(prepaid),
                 "Monto_Efectivo_Cobrado": 0, "Monto_Transferencia_Adicional": 0,
@@ -562,7 +568,9 @@ elif role == "CONDUCTOR":
                     st.write(f"**Estado:** {state}")
                     if gps_ok and pd.notna(order.get("Distancia_km")) and math.isfinite(float(order.get("Distancia_km"))):
                         st.write(f"**Distancia aproximada:** {float(order.get('Distancia_km')):.1f} km")
-                    st.link_button("ABRIR NAVEGACIÓN GPS", maps_url(address), use_container_width=True)
+                    saved_map_link = str(order.get("Ubicacion_Google_Maps", "") or "").strip()
+                    navigation_url = saved_map_link if saved_map_link.startswith(("https://", "http://")) else maps_url(address)
+                    st.link_button("ABRIR NAVEGACIÓN GPS", navigation_url, use_container_width=True)
                     if st.button("CONFIRMAR ENTREGA", key=f"del_{order_id}", use_container_width=True):
                         rec = order.drop(labels=["Distancia_km"], errors="ignore").to_dict()
                         rec["Estado_Reparto"] = "Entregado"
