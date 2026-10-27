@@ -20,111 +20,71 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-:root {
-    color-scheme: light !important;
-}
+:root { color-scheme: light !important; }
 .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
-    background: #FFFFFF !important;
-    color: #17212F !important;
+  background:#F5F7FB !important; color:#17243A !important;
 }
-[data-testid="stHeader"] { background: #FFFFFF !important; }
-[data-testid="stSidebar"] {
-    background: #F3F7FC !important;
-    border-right: 2px solid #D5A629 !important;
+[data-testid="stHeader"] { background:rgba(245,247,251,.94) !important; }
+[data-testid="stMainBlockContainer"] { max-width:1480px; padding-top:1.35rem; padding-bottom:3rem; }
+[data-testid="stSidebar"] { background:#FFFFFF !important; border-right:1px solid #DCE4EF !important; }
+[data-testid="stSidebar"] > div:first-child { padding-top:1.2rem; }
+html, body, p, li, label, span, div { color:inherit; }
+[data-testid="stMain"] p, [data-testid="stMain"] li { color:#34445B !important; }
+h1,h2,h3,h4,[data-testid="stMarkdownContainer"] h1,[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3 {
+  color:#123B70 !important; font-weight:850 !important; letter-spacing:-.025em;
 }
-/* Texto general: forzar colores oscuros para que no desaparezcan sobre blanco. */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"],
-[data-testid="stMain"] p, [data-testid="stMain"] li {
-    color: #17212F !important;
+h1 { font-size:2.15rem !important; }
+h2 { font-size:1.55rem !important; }
+h3 { font-size:1.15rem !important; }
+[data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] *,
+.stTextInput label,.stTextArea label,.stNumberInput label,.stSelectbox label,
+.stMultiSelect label,.stDateInput label,.stTimeInput label,.stRadio label,
+.stCheckbox label,.stSlider label,.stFileUploader label,
+[data-testid="stForm"] label,[data-testid="stForm"] label * {
+  color:#1C2D45 !important; opacity:1 !important; font-weight:700 !important;
 }
-h1, h2, h3, h4,
-[data-testid="stMarkdownContainer"] h1,
-[data-testid="stMarkdownContainer"] h2,
-[data-testid="stMarkdownContainer"] h3 {
-    color: #153F78 !important;
-    font-weight: 800 !important;
-}
-/* Etiquetas de TODOS los campos: texto oscuro y legible. */
-[data-testid="stWidgetLabel"],
-[data-testid="stWidgetLabel"] *,
-[data-testid="stWidgetLabel"] p,
-.stTextInput label, .stTextArea label, .stNumberInput label,
-.stSelectbox label, .stMultiSelect label, .stDateInput label,
-.stTimeInput label, .stRadio label, .stCheckbox label,
-.stSlider label, .stFileUploader label,
-[data-testid="stForm"] label,
-[data-testid="stForm"] label *,
-[data-testid="stMarkdownContainer"] p {
-    color: #17212F !important;
-    opacity: 1 !important;
-    font-weight: 700 !important;
-}
-/* Texto escrito, opciones y valores seleccionados. */
-input, textarea,
-[data-baseweb="select"] *,
-[data-baseweb="input"] *,
-[data-baseweb="textarea"] *,
+input,textarea,[data-baseweb="select"] *,[data-baseweb="input"] *,[data-baseweb="textarea"] *,
 [data-testid="stDateInput"] input {
-    background-color: #FFFFFF !important;
-    color: #17212F !important;
-    -webkit-text-fill-color: #17212F !important;
-    opacity: 1 !important;
+  background:#FFFFFF !important; color:#17243A !important; -webkit-text-fill-color:#17243A !important;
+  border-color:#C8D4E3 !important; opacity:1 !important;
 }
-input::placeholder, textarea::placeholder {
-    color: #596579 !important;
-    -webkit-text-fill-color: #596579 !important;
-    opacity: 1 !important;
-}
-.stCaption, [data-testid="stCaptionContainer"],
-[data-testid="stCaptionContainer"] * {
-    color: #3F4B5B !important;
-    opacity: 1 !important;
-}
+input::placeholder,textarea::placeholder { color:#718096 !important; -webkit-text-fill-color:#718096 !important; opacity:1 !important; }
+[data-testid="stCaptionContainer"],[data-testid="stCaptionContainer"] * { color:#64748B !important; opacity:1 !important; }
+[data-testid="stVerticalBlockBorderWrapper"] { background:#FFFFFF !important; border:1px solid #DFE6EF !important; border-radius:18px !important; box-shadow:0 5px 18px rgba(21,47,82,.045); }
+[data-testid="stMetric"] { background:#FFFFFF !important; border:1px solid #DFE6EF !important; border-radius:18px !important; padding:16px 18px !important; box-shadow:0 5px 18px rgba(21,47,82,.045); }
+[data-testid="stMetricLabel"] { color:#52627A !important; font-weight:700 !important; }
+[data-testid="stMetricValue"] { color:#123B70 !important; font-weight:900 !important; }
 div.stButton > button, div.stFormSubmitButton > button, .stLinkButton a {
-    background: #174A91 !important;
-    color: #FFFFFF !important;
-    border: 2px solid #174A91 !important;
-    border-radius: 12px !important;
-    min-height: 48px !important;
-    font-weight: 800 !important;
-    font-size: 16px !important;
+  background:#174A91 !important; color:#FFFFFF !important; border:1px solid #174A91 !important;
+  border-radius:12px !important; min-height:46px !important; padding:.55rem 1rem !important;
+  font-weight:800 !important; font-size:15px !important; box-shadow:0 3px 8px rgba(23,74,145,.12);
 }
-div.stButton > button:hover, div.stFormSubmitButton > button:hover {
-    background: #0F356B !important;
-    border-color: #D5A629 !important;
-    color: #FFFFFF !important;
+div.stButton > button:hover,div.stFormSubmitButton > button:hover,.stLinkButton a:hover {
+  background:#10386F !important; border-color:#D5A629 !important; color:#FFFFFF !important;
 }
-[data-testid="stMetric"] {
-    background: #F1F6FD !important;
-    border: 1px solid #B9CBE2 !important;
-    border-radius: 14px !important;
-    padding: 14px !important;
-}
-[data-testid="stMetricLabel"] { color: #25364B !important; }
-[data-testid="stMetricValue"] { color: #123E79 !important; font-weight: 850 !important; }
-[data-testid="stVerticalBlockBorderWrapper"] {
-    border-color: #C7D5E6 !important;
-    border-radius: 14px !important;
-}
-input, textarea, [data-baseweb="select"] > div {
-    background: #FFFFFF !important;
-    color: #17212F !important;
-}
-[data-testid="stDataFrame"] { border: 1px solid #C7D5E6; }
-.optiruta-brand {
-    color: #174A91; font-weight: 900; letter-spacing: 1.5px;
-    font-size: 30px; line-height: 1.1;
-}
-.optiruta-sub { color: #27384D; font-size: 14px; font-weight: 600; }
-.flag-blue { height: 8px; background: #174A91; border-radius: 8px; }
-.flag-gold { height: 5px; background: #D5A629; border-radius: 8px; margin-top: 5px; }
-.order-number { font-size: 25px; color: #123E79; font-weight: 900; }
-.order-address { font-size: 18px; color: #17212F; font-weight: 750; }
-.small-note { color: #3F4B5B; font-size: 13px; }
-.quick-action { background:#F1F6FD; border:1px solid #B9CBE2; border-radius:14px; padding:10px; }
+button[kind="secondary"] { background:#FFFFFF !important; color:#174A91 !important; border:1px solid #B8C9DE !important; }
+[data-testid="stDataFrame"] { border:1px solid #DCE4EF !important; border-radius:14px !important; overflow:hidden; }
+[data-testid="stForm"] { background:#FFFFFF; border:1px solid #E0E7F0; border-radius:18px; padding:1.1rem 1.2rem .7rem; }
+hr { border-color:#E0E7F0 !important; }
+.optiruta-top { background:linear-gradient(115deg,#123B70 0%,#1B579C 72%,#D5A629 72%,#D5A629 100%); border-radius:20px; padding:20px 24px; color:#FFFFFF; margin-bottom:18px; box-shadow:0 8px 22px rgba(18,59,112,.12); }
+.optiruta-top * { color:#FFFFFF !important; }
+.optiruta-brand { font-size:28px; font-weight:950; letter-spacing:2px; line-height:1.1; }
+.optiruta-sub { font-size:13px; font-weight:700; letter-spacing:1.7px; opacity:.92; margin-top:4px; }
+.optiruta-tag { display:inline-block; margin-top:12px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28); border-radius:30px; padding:5px 11px; font-size:12px; font-weight:700; }
+.sidebar-brand { color:#174A91 !important; font-size:25px; font-weight:950; letter-spacing:1.5px; }
+.sidebar-caption { color:#65758B !important; font-size:12px; font-weight:700; letter-spacing:1px; }
+.flag-blue { height:7px; background:#174A91; border-radius:7px; }
+.flag-gold { height:4px; background:#D5A629; border-radius:7px; margin-top:5px; }
+.order-number { font-size:25px; color:#123E79; font-weight:900; }
+.order-address { font-size:18px; color:#17212F; font-weight:750; }
+.small-note { color:#64748B; font-size:13px; }
 .priority-high { color:#A32121; font-weight:900; }
 .priority-normal { color:#174A91; font-weight:800; }
-
+@media (max-width: 760px) {
+ [data-testid="stMainBlockContainer"] { padding-left:1rem; padding-right:1rem; }
+ h1 { font-size:1.7rem !important; }
+ .optiruta-top { padding:17px; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -201,10 +161,12 @@ def maps_url(address):
 
 
 def brand_header(subtitle="Sistema de gestión de delivery"):
-    st.markdown('<div class="optiruta-brand">OPTIRUTA</div>', unsafe_allow_html=True)
-    st.markdown('<div class="optiruta-sub">DELIVERY · LUQUE</div>', unsafe_allow_html=True)
-    st.markdown('<div class="flag-blue"></div><div class="flag-gold"></div>', unsafe_allow_html=True)
-    st.caption(subtitle)
+    st.markdown(
+        '<div class="optiruta-top"><div class="optiruta-brand">OPTIRUTA</div>'
+        '<div class="optiruta-sub">DELIVERY · LUQUE · PARAGUAY</div>'
+        f'<div class="optiruta-tag">{subtitle}</div></div>',
+        unsafe_allow_html=True
+    )
 
 
 if "user" not in st.session_state:
@@ -214,10 +176,9 @@ if "portal" not in st.session_state:
 
 # -------------------- ACCESO / INICIO --------------------
 if not st.session_state.user:
-    brand_header("Plataforma de pedidos, reparto y seguimiento")
-    st.write("")
-    st.title("Bienvenido")
-    st.write("Elegí tu acceso para continuar.")
+    brand_header("Plataforma de pedidos, reparto y seguimiento · PYG")
+    st.title("Bienvenido a OptiRuta")
+    st.write("Elegí tu perfil para ingresar al espacio de trabajo correspondiente.")
     p1, p2, p3 = st.columns(3)
     with p1:
         if st.button("🏪  EMPRENDEDORES", use_container_width=True):
@@ -267,26 +228,28 @@ role = str(user.get("Rol", "")).upper()
 uid = user.get("ID_Referencia", "")
 
 with st.sidebar:
-    st.markdown("## OPTIRUTA")
+    st.markdown('<div class="sidebar-brand">OPTIRUTA</div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
     st.markdown('<div class="flag-blue"></div><div class="flag-gold"></div>', unsafe_allow_html=True)
+    st.write("")
     st.write(f"**{user.get('Usuario', 'Usuario')}**")
-    st.caption(role)
-    if st.button("CERRAR SESIÓN", use_container_width=True):
+    st.caption({"ADMIN":"Administración", "EMPRENDEDOR":"Portal emprendedor", "CONDUCTOR":"Portal conductor"}.get(role, role))
+    if role == "ADMIN":
+        st.markdown("**MENÚ PRINCIPAL**")
+        st.radio(
+            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
+            key="admin_section", label_visibility="collapsed"
+        )
+    st.divider()
+    if st.button("↩ CERRAR SESIÓN", use_container_width=True):
         st.session_state.user = None
         st.session_state.portal = None
         st.rerun()
 
 # -------------------- ADMINISTRADOR --------------------
 if role == "ADMIN":
-    brand_header("Panel de administración")
+    brand_header("Panel de administración · Moneda: PYG")
     st.caption("En los formularios, usá Tab para pasar al siguiente campo y Enter dentro de los campos de texto multilínea para escribir otro renglón. En el inicio de sesión, Enter confirma el acceso.")
-    section = st.radio(
-        "SECCIONES",
-        ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
-        horizontal=True,
-        label_visibility="collapsed",
-        key="admin_section"
-    )
+    section = st.session_state.get("admin_section", "Resumen")
 
     if section == "Resumen":
         orders = df("PEDIDOS")
@@ -512,18 +475,38 @@ if role == "ADMIN":
                 tr = int(float(r.get("Monto_Transferencia_Adicional", 0) or 0))
                 if tr > 0:
                     transfer_summary.append({"ID_Pedido": str(r.get("ID_Pedido", "")), "Cliente": str(r.get("Nombre_Cliente", "")), "Transferencia_a_emprendedor": tr, "Estado": str(r.get("Estado_Transferencia_Cliente", "Pendiente de confirmar")), "Instrucciones": str(r.get("Instrucciones_Pago", ""))})
+            # La estructura coincide con las columnas existentes de LIQUIDACIONES.
+            # Total_Pedidos representa productos sin envío; Total_Envios queda separado.
+            total_products = int(pd.to_numeric(driver_orders.get("Costo_Producto", 0), errors="coerce").fillna(0).sum()) if "Costo_Producto" in driver_orders.columns else 0
+            total_shipping = int(pd.to_numeric(driver_orders.get("Costo_Envio", 0), errors="coerce").fillna(0).sum()) if "Costo_Envio" in driver_orders.columns else 0
+            total_transfers = 0
+            total_prepaid = int(pd.to_numeric(driver_orders.get("Monto_Anticipado", 0), errors="coerce").fillna(0).sum()) if "Monto_Anticipado" in driver_orders.columns else 0
+            if "Monto_Transferencia_Adicional" in driver_orders.columns:
+                for _, transfer_row in driver_orders.iterrows():
+                    if str(transfer_row.get("Estado_Transferencia_Cliente", "")) == "Acreditada al emprendedor":
+                        try:
+                            total_transfers += int(float(transfer_row.get("Monto_Transferencia_Adicional", 0) or 0))
+                        except Exception:
+                            pass
             liquidation = {
                 "ID_Liquidacion": liquidation_id,
                 "Fecha_Hora": datetime.now().isoformat(timespec="seconds"),
+                "Tipo_Liquidacion": "RENDICION_CONDUCTOR",
                 "ID_Conductor": driver_id,
+                "ID_Emprendedor": "",
                 "Pedidos_Incluidos": ",".join(order_ids),
-                "Cantidad_Pedidos": len(order_ids),
-                "Efectivo_Esperado": int(expected_total),
-                "Efectivo_Entregado": int(cash_delivered),
-                "Diferencia_Caja": int(cash_delivered - expected_total),
-                "Detalle_Transferencias_Clientes": str(transfer_summary),
-                "Observaciones": cash_note,
-                "Estado": "Registrada"
+                "Total_Pedidos": total_products,
+                "Total_Envios": total_shipping,
+                "Total_Efectivo": int(expected_total),
+                "Total_Transferencias": int(total_transfers),
+                "Total_Anticipos": int(total_prepaid),
+                "Pago_Conductor": "",
+                "Pago_Emprendedor": "",
+                "Ganancia_OptiRuta": "",
+                "Total_Rendido": int(cash_delivered),
+                "Diferencia": int(cash_delivered - expected_total),
+                "Estado": "Registrada",
+                "Observaciones": cash_note + (" | Transferencias: " + str(transfer_summary) if transfer_summary else "")
             }
             result = api("save", sheet="LIQUIDACIONES", record=liquidation)
             if result:
@@ -593,7 +576,7 @@ if role == "ADMIN":
 
 # -------------------- EMPRENDEDOR --------------------
 elif role == "EMPRENDEDOR":
-    brand_header("Portal privado del emprendedor")
+    brand_header("Portal privado del emprendedor · Moneda: PYG")
     st.caption("Usá Tab para pasar al siguiente campo. En descripción e instrucciones podés presionar Enter para escribir otro renglón.")
     st.title("Cargar un pedido")
     st.markdown("### 📦 Información del pedido")
@@ -655,7 +638,7 @@ elif role == "EMPRENDEDOR":
 
 # -------------------- CONDUCTOR --------------------
 elif role == "CONDUCTOR":
-    brand_header("Aplicación de trabajo del conductor")
+    brand_header("Aplicación de trabajo del conductor · Moneda: PYG")
     st.title("Mis entregas")
     st.caption("Pantalla clara de alto contraste para facilitar la lectura bajo el sol.")
 
