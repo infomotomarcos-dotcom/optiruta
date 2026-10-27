@@ -121,6 +121,10 @@ input, textarea, [data-baseweb="select"] > div {
 .order-number { font-size: 25px; color: #123E79; font-weight: 900; }
 .order-address { font-size: 18px; color: #17212F; font-weight: 750; }
 .small-note { color: #3F4B5B; font-size: 13px; }
+.quick-action { background:#F1F6FD; border:1px solid #B9CBE2; border-radius:14px; padding:10px; }
+.priority-high { color:#A32121; font-weight:900; }
+.priority-normal { color:#174A91; font-weight:800; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -237,7 +241,7 @@ if not st.session_state.user:
         st.divider()
         st.subheader(portal_names[st.session_state.portal])
         st.markdown("### 🔐 Ingresá tus datos de acceso")
-        with st.form("login_form"):
+        with st.form("login_form", enter_to_submit=True):
             username = st.text_input("Usuario")
             password = st.text_input("Contraseña", type="password")
             submitted = st.form_submit_button("INGRESAR", use_container_width=True)
@@ -275,24 +279,48 @@ with st.sidebar:
 # -------------------- ADMINISTRADOR --------------------
 if role == "ADMIN":
     brand_header("Panel de administración")
+    st.caption("En los formularios, usá Tab para pasar al siguiente campo y Enter dentro de los campos de texto multilínea para escribir otro renglón. En el inicio de sesión, Enter confirma el acceso.")
     section = st.radio(
         "SECCIONES",
         ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
         horizontal=True,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="admin_section"
     )
 
     if section == "Resumen":
         orders = df("PEDIDOS")
         drivers = df("CONDUCTORES")
         entrepreneurs = df("EMPRENDEDORES")
+        if not orders.empty and "Estado_Registro" in orders.columns:
+            orders = orders[orders["Estado_Registro"].astype(str) != "Eliminado"]
         c1, c2, c3 = st.columns(3)
         c1.metric("Pedidos registrados", len(orders))
         c2.metric("Conductores", len(drivers))
         c3.metric("Emprendedores", len(entrepreneurs))
         if not orders.empty and "Estado_Reparto" in orders.columns:
             st.subheader("Estado de los pedidos")
-            st.bar_chart(orders["Estado_Reparto"].fillna("Sin estado").value_counts())
+            counts = orders["Estado_Reparto"].fillna("Sin estado").value_counts()
+            cols = st.columns(4)
+            for i, state_name in enumerate(["Pendiente", "Retirado", "En ruta", "Entregado"]):
+                with cols[i]:
+                    st.metric(state_name, int(counts.get(state_name, 0)))
+                    if st.button(f"Ver {state_name.lower()}", key=f"quick_{state_name}", use_container_width=True):
+                        st.session_state["orders_filter"] = state_name
+                        st.session_state["admin_section"] = "Pedidos"
+                        st.rerun()
+            st.bar_chart(counts)
+            q1, q2 = st.columns(2)
+            with q1:
+                if st.button("🛵 REASIGNAR PEDIDOS", use_container_width=True):
+                    st.session_state["orders_filter"] = "Todos"
+                    st.session_state["admin_section"] = "Pedidos"
+                    st.rerun()
+            with q2:
+                if st.button("＋ NUEVO PEDIDO", use_container_width=True):
+                    st.session_state["orders_filter"] = "Todos"
+                    st.session_state["admin_section"] = "Pedidos"
+                    st.rerun()
 
     elif section == "Pedidos":
         st.subheader("Registrar pedido")
@@ -300,7 +328,7 @@ if role == "ADMIN":
         drivers = rows("CONDUCTORES")
         motos = rows("MOTOS")
         st.markdown("### 🧾 Datos del nuevo pedido")
-        with st.form("new_order"):
+        with st.form("new_order", enter_to_submit=False):
             em_options = {
                 f"{x.get('Nombre_Comercial')} ({x.get('ID_Emprendedor')})": x.get("ID_Emprendedor")
                 for x in entrepreneurs if x.get("Estado", "Activo") == "Activo"
@@ -309,7 +337,9 @@ if role == "ADMIN":
             customer = st.text_input("Nombre del cliente")
             phone = st.text_input("Teléfono")
             address = st.text_input("Dirección de entrega")
-            description = st.text_input("Descripción del pedido")
+            maps_location = st.text_input("Ubicación de Google Maps", placeholder="Pegá el enlace compartido")
+            description = st.text_area("Descripción del pedido", height=90)
+            priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"])
             a, b, c = st.columns(3)
             product_cost = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000)
             shipping = b.number_input("Costo del envío (Gs.)", min_value=0, value=15000, step=1000)
@@ -321,17 +351,21 @@ if role == "ADMIN":
                 transfer = int(product_cost + shipping)
             else:
                 transfer = 0
+            transfer_status = st.selectbox("Estado de la transferencia del cliente", ["No corresponde", "Pendiente de confirmar", "Acreditada al emprendedor"], index=2 if method == "Pagado adelantado" else (1 if transfer > 0 else 0))
+            payment_note = st.text_area("Acuerdo de pago conversado por WhatsApp", height=70)
             if st.form_submit_button("REGISTRAR PEDIDO", use_container_width=True):
                 total = int(product_cost + shipping)
                 record = {
                     "ID_Pedido": "", "Fecha_Carga": datetime.now().isoformat(timespec="seconds"),
                     "ID_Emprendedor": em_options.get(em_label, ""), "Nombre_Cliente": customer,
-                    "Telefono_Cliente": phone, "Direccion_Entrega": address, "Descripcion_Pedido": description,
-                    "Costo_Producto": int(product_cost), "Costo_Envio": int(shipping), "Total_Cobrar": total,
+                    "Telefono_Cliente": phone, "Direccion_Entrega": address,
+                    "Ubicacion_Google_Maps": maps_location.strip(), "Descripcion_Pedido": description,
+                    "Prioridad": priority, "Costo_Producto": int(product_cost), "Costo_Envio": int(shipping), "Total_Cobrar": total,
                     "Metodo_Pago": method, "Monto_Anticipado": int(prepaid), "Monto_Efectivo_Cobrado": 0,
-                    "Monto_Transferencia_Adicional": int(transfer), "ID_Conductor": "", "ID_Moto": "",
+                    "Monto_Transferencia_Adicional": int(transfer), "Estado_Transferencia_Cliente": transfer_status,
+                    "Instrucciones_Pago": payment_note, "ID_Conductor": "", "ID_Moto": "",
                     "Estado_Reparto": "Pendiente", "Fecha_Entrega": "", "Estado_Liquidacion": "Pendiente",
-                    "Observaciones": ""
+                    "Estado_Registro": "Activo", "Observaciones": ""
                 }
                 if not customer or not address:
                     st.error("Completá el nombre y la dirección.")
@@ -342,8 +376,25 @@ if role == "ADMIN":
         st.subheader("Asignar o modificar pedidos")
         data = df("PEDIDOS")
         if not data.empty:
-            st.dataframe(data, use_container_width=True, hide_index=True)
-            ids = data.get("ID_Pedido", pd.Series(dtype=str)).astype(str).tolist()
+            if "Estado_Registro" in data.columns:
+                active_data = data[data["Estado_Registro"].astype(str) != "Eliminado"].copy()
+                show_deleted = st.checkbox("Mostrar pedidos eliminados", value=False)
+                if show_deleted:
+                    data_view = data
+                else:
+                    data_view = active_data
+            else:
+                data_view = data
+            filter_options = ["Todos", "Pendiente", "Retirado", "En ruta", "Entregado", "Cancelado"]
+            default_filter = st.session_state.pop("orders_filter", "Todos")
+            filter_state = st.selectbox("Filtrar por estado", filter_options, index=filter_options.index(default_filter) if default_filter in filter_options else 0)
+            if filter_state != "Todos" and "Estado_Reparto" in data_view.columns:
+                data_view = data_view[data_view["Estado_Reparto"].astype(str) == filter_state]
+            st.dataframe(data_view, use_container_width=True, hide_index=True)
+            ids = data_view.get("ID_Pedido", pd.Series(dtype=str)).astype(str).tolist()
+            if not ids:
+                st.info("No hay pedidos para el filtro seleccionado.")
+                st.stop()
             selected = st.selectbox("Pedido", ids)
             chosen = data[data["ID_Pedido"].astype(str) == str(selected)].iloc[0].to_dict() if selected else {}
             active_drivers = [d for d in drivers if d.get("Estado", "Activo") == "Activo"]
@@ -353,7 +404,7 @@ if role == "ADMIN":
             current_driver_label = next((k for k, v in driver_map.items() if str(v) == str(chosen.get("ID_Conductor", ""))), "")
             current_moto_label = next((k for k, v in moto_map.items() if str(v) == str(chosen.get("ID_Moto", ""))), "")
             st.markdown("### 🛵 Datos de asignación y estado")
-            with st.form("assign"):
+            with st.form("assign", enter_to_submit=False):
                 dl = st.selectbox("Conductor", [""] + list(driver_map), index=(1 + list(driver_map).index(current_driver_label)) if current_driver_label else 0)
                 ml = st.selectbox("Moto", [""] + list(moto_map), index=(1 + list(moto_map).index(current_moto_label)) if current_moto_label else 0)
                 states = ["Pendiente", "Retirado", "En ruta", "Entregado", "Cancelado"]
@@ -366,6 +417,15 @@ if role == "ADMIN":
                     if state == "Entregado" and not chosen.get("Fecha_Entrega"):
                         chosen["Fecha_Entrega"] = datetime.now().isoformat(timespec="seconds")
                     save("PEDIDOS", chosen)
+            st.divider()
+            st.markdown("### 🗑️ Dar de baja un pedido")
+            st.caption("La baja es lógica: el pedido queda oculto de la lista habitual y conserva su historial. No se borra físicamente de la hoja.")
+            confirm_delete = st.checkbox(f"Confirmo dar de baja el pedido {selected}", key=f"confirm_delete_{selected}")
+            if st.button("DAR DE BAJA PEDIDO", disabled=not confirm_delete, type="secondary", use_container_width=True):
+                chosen["Estado_Registro"] = "Eliminado"
+                chosen["Estado_Reparto"] = "Cancelado"
+                chosen["Observaciones"] = (str(chosen.get("Observaciones", "")) + " | Baja lógica por administración " + datetime.now().isoformat(timespec="seconds")).strip(" |")
+                save("PEDIDOS", chosen)
         else:
             st.info("Todavía no hay pedidos.")
 
@@ -404,19 +464,108 @@ if role == "ADMIN":
         st.dataframe(df("MOTOS"), use_container_width=True, hide_index=True)
 
     elif section == "Caja y movimientos":
-        st.subheader("Movimientos")
-        st.dataframe(df("MOVIMIENTOS"), use_container_width=True, hide_index=True)
+        st.subheader("Caja y movimientos")
+        st.markdown("### 🧾 Rendición y cierre de caja del conductor")
+        drivers_for_cash = rows("CONDUCTORES")
+        driver_cash_map = {f"{d.get('Nombre_Completo')} ({d.get('ID_Conductor')})": d.get('ID_Conductor') for d in drivers_for_cash if d.get("Estado", "Activo") == "Activo"}
+        delivered = df("PEDIDOS")
+        if not delivered.empty and "Estado_Reparto" in delivered.columns:
+            delivered = delivered[delivered["Estado_Reparto"].astype(str) == "Entregado"].copy()
+            if "Estado_Registro" in delivered.columns:
+                delivered = delivered[delivered["Estado_Registro"].astype(str) != "Eliminado"]
+        if not delivered.empty and "Estado_Liquidacion" in delivered.columns:
+            pending_cash = delivered[delivered["Estado_Liquidacion"].astype(str).isin(["Pendiente", "", "nan"])].copy()
+        else:
+            pending_cash = delivered.copy()
+
+        with st.form("driver_cash_close", enter_to_submit=False):
+            driver_label = st.selectbox("Conductor que rinde", list(driver_cash_map) or [""])
+            driver_id = driver_cash_map.get(driver_label, "")
+            driver_orders = pending_cash[pending_cash.get("ID_Conductor", pd.Series(index=pending_cash.index, dtype=str)).astype(str) == str(driver_id)] if not pending_cash.empty else pending_cash
+            st.caption("Se muestran pedidos entregados y todavía no incluidos en una liquidación.")
+            if not driver_orders.empty:
+                display_cols = [c for c in ["ID_Pedido", "Nombre_Cliente", "Total_Cobrar", "Metodo_Pago", "Monto_Anticipado", "Monto_Transferencia_Adicional", "Instrucciones_Pago"] if c in driver_orders.columns]
+                st.dataframe(driver_orders[display_cols], use_container_width=True, hide_index=True)
+                def expected_cash(row):
+                    try:
+                        total = float(row.get("Total_Cobrar", 0) or 0)
+                        prepaid_amt = float(row.get("Monto_Anticipado", 0) or 0)
+                        transfer_amt = float(row.get("Monto_Transferencia_Adicional", 0) or 0)
+                        transfer_state = str(row.get("Estado_Transferencia_Cliente", ""))
+                        credited_transfer = transfer_amt if transfer_state == "Acreditada al emprendedor" else 0
+                        return max(0, total - prepaid_amt - credited_transfer)
+                    except Exception:
+                        return 0
+                expected_total = int(driver_orders.apply(expected_cash, axis=1).sum())
+            else:
+                expected_total = 0
+                st.info("Este conductor no tiene pedidos entregados pendientes de rendición.")
+            st.metric("Efectivo esperado para entregar", money(expected_total))
+            cash_delivered = st.number_input("Efectivo que entrega físicamente el conductor (Gs.)", min_value=0, step=1000, value=int(expected_total))
+            cash_note = st.text_area("Observaciones de caja", height=70, placeholder="Diferencias, faltantes, aclaraciones...")
+            close_submit = st.form_submit_button("REGISTRAR RENDICIÓN Y CERRAR CAJA", use_container_width=True, disabled=(not driver_id or driver_orders.empty))
+        if close_submit:
+            liquidation_id = "LIQ-" + datetime.now().strftime("%Y%m%d%H%M%S")
+            order_ids = driver_orders.get("ID_Pedido", pd.Series(dtype=str)).astype(str).tolist()
+            transfer_summary = []
+            for _, r in driver_orders.iterrows():
+                tr = int(float(r.get("Monto_Transferencia_Adicional", 0) or 0))
+                if tr > 0:
+                    transfer_summary.append({"ID_Pedido": str(r.get("ID_Pedido", "")), "Cliente": str(r.get("Nombre_Cliente", "")), "Transferencia_a_emprendedor": tr, "Estado": str(r.get("Estado_Transferencia_Cliente", "Pendiente de confirmar")), "Instrucciones": str(r.get("Instrucciones_Pago", ""))})
+            liquidation = {
+                "ID_Liquidacion": liquidation_id,
+                "Fecha_Hora": datetime.now().isoformat(timespec="seconds"),
+                "ID_Conductor": driver_id,
+                "Pedidos_Incluidos": ",".join(order_ids),
+                "Cantidad_Pedidos": len(order_ids),
+                "Efectivo_Esperado": int(expected_total),
+                "Efectivo_Entregado": int(cash_delivered),
+                "Diferencia_Caja": int(cash_delivered - expected_total),
+                "Detalle_Transferencias_Clientes": str(transfer_summary),
+                "Observaciones": cash_note,
+                "Estado": "Registrada"
+            }
+            result = api("save", sheet="LIQUIDACIONES", record=liquidation)
+            if result:
+                movement_result = api("movement", record={
+                    "Tipo_Movimiento": "RENDICION_CONDUCTOR",
+                    "ID_Conductor": driver_id,
+                    "Cuenta_Origen": "CONDUCTOR",
+                    "Cuenta_Destino": "OPTIRUTA",
+                    "Metodo_Pago": "Efectivo",
+                    "Monto": int(cash_delivered),
+                    "Efectivo_Esperado": int(expected_total),
+                    "Diferencia_Caja": int(cash_delivered - expected_total),
+                    "ID_Liquidacion": liquidation_id,
+                    "Estado": "Registrado",
+                    "Referencia": ",".join(order_ids),
+                    "Fecha_Hora": datetime.now().isoformat(timespec="seconds"),
+                    "Observaciones": cash_note
+                })
+                if movement_result:
+                    for _, r in driver_orders.iterrows():
+                        rec = r.to_dict()
+                        rec["Estado_Liquidacion"] = "Rendido"
+                        rec["ID_Liquidacion"] = liquidation_id
+                        api("save", sheet="PEDIDOS", record=rec)
+                    st.success(f"Rendición {liquidation_id} registrada. Revisá la diferencia de caja antes de darla por aprobada.")
+                    st.rerun()
+                else:
+                    st.error("La liquidación se guardó, pero no se pudo registrar el movimiento de caja. Revisá antes de volver a intentar para evitar duplicados.")
+
+        st.divider()
         st.subheader("Registrar transferencia recibida del emprendedor")
         ems = rows("EMPRENDEDORES")
         emmap = {f"{e.get('Nombre_Comercial')} ({e.get('ID_Emprendedor')})": e.get("ID_Emprendedor") for e in ems}
-        st.markdown("### 💳 Datos de la transferencia")
-        with st.form("transfer_in"):
+        with st.form("transfer_in", enter_to_submit=False):
             emlabel = st.selectbox("Emprendedor", list(emmap) or [""])
             amount = st.number_input("Monto recibido (Gs.)", min_value=0, step=1000)
             ref = st.text_input("Referencia / comprobante")
             if st.form_submit_button("REGISTRAR TRANSFERENCIA"):
                 api("movement", record={"Tipo_Movimiento": "TRANSFERENCIA_ENVIO_RECIBIDA", "ID_Emprendedor": emmap.get(emlabel, ""), "Cuenta_Origen": "EMPRENDEDOR", "Cuenta_Destino": "OPTIRUTA", "Metodo_Pago": "Transferencia", "Monto": int(amount), "Estado": "Confirmado", "Referencia": ref, "Fecha_Hora": datetime.now().isoformat(timespec="seconds")})
                 st.rerun()
+        st.subheader("Historial de movimientos")
+        st.dataframe(df("MOVIMIENTOS"), use_container_width=True, hide_index=True)
         st.subheader("Liquidaciones guardadas")
         st.dataframe(df("LIQUIDACIONES"), use_container_width=True, hide_index=True)
 
@@ -445,9 +594,10 @@ if role == "ADMIN":
 # -------------------- EMPRENDEDOR --------------------
 elif role == "EMPRENDEDOR":
     brand_header("Portal privado del emprendedor")
+    st.caption("Usá Tab para pasar al siguiente campo. En descripción e instrucciones podés presionar Enter para escribir otro renglón.")
     st.title("Cargar un pedido")
     st.markdown("### 📦 Información del pedido")
-    with st.form("entrepreneur_order"):
+    with st.form("entrepreneur_order", enter_to_submit=False):
         customer = st.text_input("Nombre del cliente")
         phone = st.text_input("Teléfono")
         address = st.text_input("Dirección de entrega")
@@ -456,24 +606,38 @@ elif role == "EMPRENDEDOR":
             placeholder="https://maps.app.goo.gl/..."
         )
         st.caption("En Google Maps: abrí la ubicación del cliente, tocá Compartir y copiá el enlace.")
-        description = st.text_input("Descripción del pedido")
+        description = st.text_area("Descripción del pedido", height=90)
+        priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"], help="Urgente solo para pedidos que realmente requieren atención inmediata.")
         a, b, c = st.columns(3)
         product = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000)
         shipping = b.number_input("Costo del envío (Gs.)", min_value=0, step=1000)
         prepaid = c.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000)
-        method = st.selectbox("Método de pago", ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"])
+        method = st.selectbox("Método de pago acordado por WhatsApp", ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"])
+        if method == "Efectivo + transferencia":
+            transfer_amount = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000)
+        elif method in ["Transferencia al emprendedor", "Pagado adelantado"]:
+            transfer_amount = int(product + shipping)
+        else:
+            transfer_amount = 0
+        if transfer_amount > 0:
+            transfer_status = st.selectbox("Estado de la transferencia", ["Pendiente de confirmar", "Acreditada al emprendedor"], help="Marcá acreditada únicamente después de verificar el ingreso en la cuenta.")
+        else:
+            transfer_status = "No corresponde"
+        payment_note = st.text_area("Instrucciones / acuerdo conversado por WhatsApp", height=75, placeholder="Ej.: el cliente ya transfirió Gs. 20.000 al emprendedor; el resto se cobra en efectivo.")
+        st.caption("El conductor no contactará al cliente. Dejá asentado el acuerdo. Solo marcá la transferencia como acreditada cuando ya verificaste el dinero.")
         if st.form_submit_button("ENVIAR PEDIDO", use_container_width=True):
             total = int(product + shipping)
             record = {
                 "ID_Pedido": "", "Fecha_Carga": datetime.now().isoformat(timespec="seconds"),
                 "ID_Emprendedor": uid, "Nombre_Cliente": customer, "Telefono_Cliente": phone,
                 "Direccion_Entrega": address, "Ubicacion_Google_Maps": maps_location.strip(),
-                "Descripcion_Pedido": description,
+                "Descripcion_Pedido": description, "Prioridad": priority,
                 "Costo_Producto": int(product), "Costo_Envio": int(shipping), "Total_Cobrar": total,
                 "Metodo_Pago": method, "Monto_Anticipado": int(prepaid),
-                "Monto_Efectivo_Cobrado": 0, "Monto_Transferencia_Adicional": 0,
+                "Monto_Efectivo_Cobrado": 0, "Monto_Transferencia_Adicional": int(transfer_amount),
+                "Instrucciones_Pago": payment_note, "Estado_Transferencia_Cliente": transfer_status,
                 "ID_Conductor": "", "ID_Moto": "", "Estado_Reparto": "Pendiente",
-                "Fecha_Entrega": "", "Estado_Liquidacion": "Pendiente", "Observaciones": ""
+                "Fecha_Entrega": "", "Estado_Liquidacion": "Pendiente", "Estado_Registro": "Activo", "Observaciones": ""
             }
             if customer and address:
                 save("PEDIDOS", record)
@@ -566,6 +730,11 @@ elif role == "CONDUCTOR":
                     st.write(f"**Destino:** {address}")
                     st.write(f"**Monto a cobrar:** {money(amount)}")
                     st.write(f"**Estado:** {state}")
+                    priority_value = str(order.get("Prioridad", "Normal") or "Normal")
+                    if priority_value == "Urgente":
+                        st.error("PRIORIDAD URGENTE")
+                    elif priority_value == "Alta":
+                        st.warning("PRIORIDAD ALTA")
                     if gps_ok and pd.notna(order.get("Distancia_km")) and math.isfinite(float(order.get("Distancia_km"))):
                         st.write(f"**Distancia aproximada:** {float(order.get('Distancia_km')):.1f} km")
                     saved_map_link = str(order.get("Ubicacion_Google_Maps", "") or "").strip()
