@@ -54,15 +54,24 @@ input::placeholder,textarea::placeholder { color:#718096 !important; -webkit-tex
 [data-testid="stMetric"] { background:#FFFFFF !important; border:1px solid #DFE6EF !important; border-radius:18px !important; padding:16px 18px !important; box-shadow:0 5px 18px rgba(21,47,82,.045); }
 [data-testid="stMetricLabel"] { color:#52627A !important; font-weight:700 !important; }
 [data-testid="stMetricValue"] { color:#123B70 !important; font-weight:900 !important; }
-div.stButton > button, div.stFormSubmitButton > button, .stLinkButton a {
-  background:#174A91 !important; color:#FFFFFF !important; border:1px solid #174A91 !important;
-  border-radius:12px !important; min-height:46px !important; padding:.55rem 1rem !important;
-  font-weight:800 !important; font-size:15px !important; box-shadow:0 3px 8px rgba(23,74,145,.12);
+div.stButton > button:not([kind="secondary"]), div.stFormSubmitButton > button, .stLinkButton a {
+  background:#174A91 !important; color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
+  border:1px solid #174A91 !important; border-radius:12px !important; min-height:46px !important;
+  padding:.55rem 1rem !important; font-weight:800 !important; font-size:15px !important;
+  box-shadow:0 3px 8px rgba(23,74,145,.12);
 }
-div.stButton > button:hover,div.stFormSubmitButton > button:hover,.stLinkButton a:hover {
+div.stButton > button:not([kind="secondary"]) *, div.stFormSubmitButton > button *, .stLinkButton a * {
+  color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
+}
+div.stButton > button:not([kind="secondary"]):hover, div.stFormSubmitButton > button:hover, .stLinkButton a:hover {
   background:#10386F !important; border-color:#D5A629 !important; color:#FFFFFF !important;
+  -webkit-text-fill-color:#FFFFFF !important;
 }
-button[kind="secondary"] { background:#FFFFFF !important; color:#174A91 !important; border:1px solid #B8C9DE !important; }
+div.stButton > button:not([kind="secondary"]):hover *, div.stFormSubmitButton > button:hover *, .stLinkButton a:hover * {
+  color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
+}
+button[kind="secondary"] { background:#FFFFFF !important; color:#174A91 !important; -webkit-text-fill-color:#174A91 !important; border:1px solid #B8C9DE !important; }
+button[kind="secondary"] * { color:#174A91 !important; -webkit-text-fill-color:#174A91 !important; }
 [data-testid="stDataFrame"] { border:1px solid #DCE4EF !important; border-radius:14px !important; overflow:hidden; }
 [data-testid="stForm"] { background:#FFFFFF; border:1px solid #E0E7F0; border-radius:18px; padding:1.1rem 1.2rem .7rem; }
 hr { border-color:#E0E7F0 !important; }
