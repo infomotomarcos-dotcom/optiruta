@@ -25,7 +25,7 @@ st.markdown("""
   background:#F5F7FB !important; color:#17243A !important;
 }
 [data-testid="stHeader"] { background:rgba(245,247,251,.94) !important; }
-[data-testid="stMainBlockContainer"] { max-width:1480px; padding-top:1.35rem; padding-bottom:3rem; }
+[data-testid="stMainBlockContainer"] { max-width:1480px; padding-top:3.8rem; padding-bottom:3rem; }
 [data-testid="stSidebar"] { background:#FFFFFF !important; border-right:1px solid #DCE4EF !important; }
 [data-testid="stSidebar"] > div:first-child { padding-top:1.2rem; }
 html, body, p, li, label, span, div { color:inherit; }
@@ -75,10 +75,11 @@ button[kind="secondary"] * { color:#174A91 !important; -webkit-text-fill-color:#
 [data-testid="stDataFrame"] { border:1px solid #DCE4EF !important; border-radius:14px !important; overflow:hidden; }
 [data-testid="stForm"] { background:#FFFFFF; border:1px solid #E0E7F0; border-radius:18px; padding:1.1rem 1.2rem .7rem; }
 hr { border-color:#E0E7F0 !important; }
-.optiruta-top { background:linear-gradient(115deg,#123B70 0%,#1B579C 72%,#D5A629 72%,#D5A629 100%); border-radius:20px; padding:20px 24px; color:#FFFFFF; margin-bottom:18px; box-shadow:0 8px 22px rgba(18,59,112,.12); }
+.optiruta-top { background:linear-gradient(115deg,#123B70 0%,#1B579C 72%,#D5A629 72%,#D5A629 100%); border-radius:20px; padding:28px 28px; color:#FFFFFF; margin-bottom:22px; box-shadow:0 8px 22px rgba(18,59,112,.12); animation: optirutaEntrada .9s ease-out both; }
 .optiruta-top * { color:#FFFFFF !important; }
-.optiruta-brand { font-size:28px; font-weight:950; letter-spacing:2px; line-height:1.1; }
-.optiruta-sub { font-size:13px; font-weight:700; letter-spacing:1.7px; opacity:.92; margin-top:4px; }
+.optiruta-brand { font-size:clamp(42px, 5vw, 66px); font-weight:950; letter-spacing:3px; line-height:1.08; animation: optirutaLogo .85s cubic-bezier(.2,.8,.2,1) both; text-shadow:0 3px 10px rgba(0,0,0,.12); }
+@keyframes optirutaEntrada { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+@keyframes optirutaLogo { from { opacity:0; transform:scale(.88); letter-spacing:10px; } to { opacity:1; transform:scale(1); letter-spacing:3px; } }
 .optiruta-tag { display:inline-block; margin-top:12px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28); border-radius:30px; padding:5px 11px; font-size:12px; font-weight:700; }
 .sidebar-brand { color:#174A91 !important; font-size:25px; font-weight:950; letter-spacing:1.5px; }
 .sidebar-caption { color:#65758B !important; font-size:12px; font-weight:700; letter-spacing:1px; }
@@ -90,7 +91,7 @@ hr { border-color:#E0E7F0 !important; }
 .priority-high { color:#A32121; font-weight:900; }
 .priority-normal { color:#174A91; font-weight:800; }
 @media (max-width: 760px) {
- [data-testid="stMainBlockContainer"] { padding-left:1rem; padding-right:1rem; }
+ [data-testid="stMainBlockContainer"] { padding-left:1rem; padding-right:1rem; padding-top:2.6rem; }
  h1 { font-size:1.7rem !important; }
  .optiruta-top { padding:17px; }
 }
@@ -172,7 +173,6 @@ def maps_url(address):
 def brand_header(subtitle="Sistema de gestión de delivery"):
     st.markdown(
         '<div class="optiruta-top"><div class="optiruta-brand">OPTIRUTA</div>'
-        '<div class="optiruta-sub">DELIVERY · LUQUE · PARAGUAY</div>'
         f'<div class="optiruta-tag">{subtitle}</div></div>',
         unsafe_allow_html=True
     )
@@ -185,22 +185,24 @@ if "portal" not in st.session_state:
 
 # -------------------- ACCESO / INICIO --------------------
 if not st.session_state.user:
-    brand_header("Plataforma de pedidos, reparto y seguimiento · PYG")
-    st.title("Bienvenido a OptiRuta")
-    st.write("Elegí tu perfil para ingresar al espacio de trabajo correspondiente.")
-    p1, p2, p3 = st.columns(3)
-    with p1:
-        if st.button("🏪  EMPRENDEDORES", use_container_width=True):
-            st.session_state.portal = "EMPRENDEDOR"
-            st.rerun()
-    with p2:
-        if st.button("🛵  CONDUCTORES DELIVERY", use_container_width=True):
-            st.session_state.portal = "CONDUCTOR"
-            st.rerun()
-    with p3:
-        if st.button("⚙️  ADMINISTRADOR", use_container_width=True):
-            st.session_state.portal = "ADMIN"
-            st.rerun()
+    if not st.session_state.portal:
+        brand_header("Plataforma de pedidos, reparto y seguimiento · PYG")
+        st.title("Bienvenido a OptiRuta")
+        st.write("Elegí tu perfil para ingresar al espacio de trabajo correspondiente.")
+    if not st.session_state.portal:
+        p1, p2, p3 = st.columns(3)
+        with p1:
+            if st.button("🏪  EMPRENDEDORES", use_container_width=True):
+                st.session_state.portal = "EMPRENDEDOR"
+                st.rerun()
+        with p2:
+            if st.button("🛵  CONDUCTORES DELIVERY", use_container_width=True):
+                st.session_state.portal = "CONDUCTOR"
+                st.rerun()
+        with p3:
+            if st.button("⚙️  ADMINISTRADOR", use_container_width=True):
+                st.session_state.portal = "ADMIN"
+                st.rerun()
 
     if st.session_state.portal:
         portal_names = {
@@ -208,7 +210,7 @@ if not st.session_state.user:
             "CONDUCTOR": "Acceso de conductores",
             "ADMIN": "Acceso de administración"
         }
-        st.divider()
+        brand_header(portal_names[st.session_state.portal])
         st.subheader(portal_names[st.session_state.portal])
         st.markdown("### 🔐 Ingresá tus datos de acceso")
         with st.form("login_form", enter_to_submit=True):
@@ -640,8 +642,87 @@ elif role == "EMPRENDEDOR":
     st.subheader("Mis pedidos")
     data = df("PEDIDOS")
     if not data.empty and "ID_Emprendedor" in data.columns:
-        mine = data[data["ID_Emprendedor"].astype(str) == str(uid)]
+        mine = data[data["ID_Emprendedor"].astype(str) == str(uid)].copy()
+        if "Estado_Registro" in mine.columns:
+            mine = mine[mine["Estado_Registro"].astype(str) != "Eliminado"]
         st.dataframe(mine, use_container_width=True, hide_index=True)
+
+        if not mine.empty and "ID_Pedido" in mine.columns:
+            st.markdown("### ✏️ Modificar un pedido")
+            st.caption("Podés corregir los datos de tus pedidos que todavía no fueron entregados ni rendidos.")
+            order_ids = mine["ID_Pedido"].astype(str).tolist()
+            selected_order_id = st.selectbox("Elegí el pedido que querés modificar", order_ids, key="entrepreneur_edit_order_id")
+            selected_rows = mine[mine["ID_Pedido"].astype(str) == str(selected_order_id)]
+            if not selected_rows.empty:
+                original = selected_rows.iloc[0].to_dict()
+                order_state = str(original.get("Estado_Reparto", "Pendiente") or "Pendiente")
+                settlement_state = str(original.get("Estado_Liquidacion", "Pendiente") or "Pendiente")
+                can_edit = order_state not in ["Entregado", "Cancelado"] and settlement_state != "Rendido"
+
+                if not can_edit:
+                    st.warning("Este pedido ya fue entregado, cancelado o rendido, por lo que no se puede modificar desde este portal. Si necesitás corregirlo, contactá a administración.")
+                else:
+                    def edit_text(value):
+                        return "" if pd.isna(value) else str(value)
+                    def edit_number(value):
+                        try:
+                            return max(0, int(float(value or 0)))
+                        except (TypeError, ValueError):
+                            return 0
+
+                    with st.form("entrepreneur_edit_order_form", enter_to_submit=False):
+                        edit_customer = st.text_input("Nombre del cliente", value=edit_text(original.get("Nombre_Cliente")), key="edit_customer")
+                        edit_phone = st.text_input("Teléfono", value=edit_text(original.get("Telefono_Cliente")), key="edit_phone")
+                        edit_address = st.text_input("Dirección de entrega", value=edit_text(original.get("Direccion_Entrega")), key="edit_address")
+                        edit_map = st.text_input("Ubicación de Google Maps", value=edit_text(original.get("Ubicacion_Google_Maps")), key="edit_map")
+                        edit_description = st.text_area("Descripción del pedido", value=edit_text(original.get("Descripcion_Pedido")), height=90, key="edit_description")
+                        priorities = ["Normal", "Alta", "Urgente"]
+                        old_priority = edit_text(original.get("Prioridad", "Normal"))
+                        edit_priority = st.selectbox("Prioridad", priorities, index=priorities.index(old_priority) if old_priority in priorities else 0, key="edit_priority")
+                        ea, eb, ec = st.columns(3)
+                        edit_product = ea.number_input("Costo del producto (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Costo_Producto")), key="edit_product")
+                        edit_shipping = eb.number_input("Costo del envío (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Costo_Envio")), key="edit_shipping")
+                        edit_prepaid = ec.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Monto_Anticipado")), key="edit_prepaid")
+                        payment_methods = ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"]
+                        old_method = edit_text(original.get("Metodo_Pago", "Efectivo al recibir"))
+                        edit_method = st.selectbox("Método de pago acordado", payment_methods, index=payment_methods.index(old_method) if old_method in payment_methods else 0, key="edit_method")
+                        old_transfer = edit_number(original.get("Monto_Transferencia_Adicional"))
+                        if edit_method == "Efectivo + transferencia":
+                            edit_transfer = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000, value=old_transfer, key="edit_transfer")
+                        elif edit_method in ["Transferencia al emprendedor", "Pagado adelantado"]:
+                            edit_transfer = int(edit_product + edit_shipping)
+                            st.caption("La transferencia se calcula con el total del pedido.")
+                        else:
+                            edit_transfer = 0
+                        transfer_states = ["No corresponde", "Pendiente de confirmar", "Acreditada al emprendedor"]
+                        old_transfer_state = edit_text(original.get("Estado_Transferencia_Cliente", "No corresponde"))
+                        default_transfer_state = old_transfer_state if old_transfer_state in transfer_states else ("Pendiente de confirmar" if edit_transfer > 0 else "No corresponde")
+                        edit_transfer_state = st.selectbox("Estado de la transferencia", transfer_states, index=transfer_states.index(default_transfer_state), key="edit_transfer_state")
+                        edit_payment_note = st.text_area("Instrucciones / acuerdo de pago", value=edit_text(original.get("Instrucciones_Pago")), height=75, key="edit_payment_note")
+                        update_order = st.form_submit_button("GUARDAR CAMBIOS DEL PEDIDO", use_container_width=True)
+
+                    if update_order:
+                        if not edit_customer.strip() or not edit_address.strip():
+                            st.error("Completá el nombre del cliente y la dirección de entrega.")
+                        else:
+                            updated = dict(original)
+                            updated.update({
+                                "Nombre_Cliente": edit_customer.strip(),
+                                "Telefono_Cliente": edit_phone.strip(),
+                                "Direccion_Entrega": edit_address.strip(),
+                                "Ubicacion_Google_Maps": edit_map.strip(),
+                                "Descripcion_Pedido": edit_description,
+                                "Prioridad": edit_priority,
+                                "Costo_Producto": int(edit_product),
+                                "Costo_Envio": int(edit_shipping),
+                                "Total_Cobrar": int(edit_product + edit_shipping),
+                                "Monto_Anticipado": int(edit_prepaid),
+                                "Metodo_Pago": edit_method,
+                                "Monto_Transferencia_Adicional": int(edit_transfer),
+                                "Estado_Transferencia_Cliente": edit_transfer_state if edit_transfer > 0 else "No corresponde",
+                                "Instrucciones_Pago": edit_payment_note,
+                            })
+                            save("PEDIDOS", updated)
     else:
         st.info("Todavía no tenés pedidos registrados.")
 
