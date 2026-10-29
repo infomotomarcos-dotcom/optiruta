@@ -31,7 +31,7 @@ st.markdown("""
 html, body, p, li, label, span, div { color:inherit; }
 [data-testid="stMain"] p, [data-testid="stMain"] li { color:#34445B !important; }
 h1,h2,h3,h4,[data-testid="stMarkdownContainer"] h1,[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3 {
-  color:#123B70 !important; font-weight:850 !important; letter-spacing:-.025em;
+  color:#0750B8 !important; font-weight:850 !important; letter-spacing:-.025em;
 }
 h1 { font-size:2.15rem !important; }
 h2 { font-size:1.55rem !important; }
@@ -53,10 +53,10 @@ input::placeholder,textarea::placeholder { color:#718096 !important; -webkit-tex
 [data-testid="stVerticalBlockBorderWrapper"] { background:#FFFFFF !important; border:1px solid #DFE6EF !important; border-radius:18px !important; box-shadow:0 5px 18px rgba(21,47,82,.045); }
 [data-testid="stMetric"] { background:#FFFFFF !important; border:1px solid #DFE6EF !important; border-radius:18px !important; padding:16px 18px !important; box-shadow:0 5px 18px rgba(21,47,82,.045); }
 [data-testid="stMetricLabel"] { color:#52627A !important; font-weight:700 !important; }
-[data-testid="stMetricValue"] { color:#123B70 !important; font-weight:900 !important; }
+[data-testid="stMetricValue"] { color:#0750B8 !important; font-weight:900 !important; }
 div.stButton > button:not([kind="secondary"]), div.stFormSubmitButton > button, .stLinkButton a {
-  background:#174A91 !important; color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
-  border:1px solid #174A91 !important; border-radius:12px !important; min-height:46px !important;
+  background:#0750B8 !important; color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
+  border:1px solid #0750B8 !important; border-radius:12px !important; min-height:46px !important;
   padding:.55rem 1rem !important; font-weight:800 !important; font-size:15px !important;
   box-shadow:0 3px 8px rgba(23,74,145,.12);
 }
@@ -64,47 +64,70 @@ div.stButton > button:not([kind="secondary"]) *, div.stFormSubmitButton > button
   color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
 }
 div.stButton > button:not([kind="secondary"]):hover, div.stFormSubmitButton > button:hover, .stLinkButton a:hover {
-  background:#10386F !important; border-color:#D5A629 !important; color:#FFFFFF !important;
+  background:#043B89 !important; border-color:#E9A817 !important; color:#FFFFFF !important;
   -webkit-text-fill-color:#FFFFFF !important;
 }
 div.stButton > button:not([kind="secondary"]):hover *, div.stFormSubmitButton > button:hover *, .stLinkButton a:hover * {
   color:#FFFFFF !important; -webkit-text-fill-color:#FFFFFF !important;
 }
-button[kind="secondary"] { background:#FFFFFF !important; color:#174A91 !important; -webkit-text-fill-color:#174A91 !important; border:1px solid #B8C9DE !important; }
-button[kind="secondary"] * { color:#174A91 !important; -webkit-text-fill-color:#174A91 !important; }
+button[kind="secondary"] { background:#FFFFFF !important; color:#0750B8 !important; -webkit-text-fill-color:#0750B8 !important; border:1px solid #B8C9DE !important; }
+button[kind="secondary"] * { color:#0750B8 !important; -webkit-text-fill-color:#0750B8 !important; }
 [data-testid="stDataFrame"] { border:1px solid #DCE4EF !important; border-radius:14px !important; overflow:hidden; }
 [data-testid="stForm"] { background:#FFFFFF; border:1px solid #E0E7F0; border-radius:18px; padding:1.1rem 1.2rem .7rem; }
 hr { border-color:#E0E7F0 !important; }
-.optiruta-top { background:linear-gradient(115deg,#123B70 0%,#1B579C 72%,#D5A629 72%,#D5A629 100%); border-radius:20px; padding:28px 28px; color:#FFFFFF; margin-bottom:22px; box-shadow:0 8px 22px rgba(18,59,112,.12); animation: optirutaEntrada .9s ease-out both; }
+.optiruta-top { background:linear-gradient(115deg,#0750B8 0%,#0750B8 72%,#E9A817 72%,#E9A817 100%); border-radius:20px; padding:28px 28px; color:#FFFFFF; margin-bottom:22px; box-shadow:0 8px 22px rgba(18,59,112,.12); animation: optirutaEntrada .9s ease-out both; }
 .optiruta-top * { color:#FFFFFF !important; }
 .optiruta-brand { font-size:clamp(42px, 5vw, 66px); font-weight:950; letter-spacing:3px; line-height:1.08; animation: optirutaLogo .85s cubic-bezier(.2,.8,.2,1) both; text-shadow:0 3px 10px rgba(0,0,0,.12); }
 @keyframes optirutaEntrada { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
 @keyframes optirutaLogo { from { opacity:0; transform:scale(.88); letter-spacing:10px; } to { opacity:1; transform:scale(1); letter-spacing:3px; } }
 .optiruta-tag { display:inline-block; margin-top:12px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28); border-radius:30px; padding:5px 11px; font-size:12px; font-weight:700; }
-.sidebar-brand { color:#174A91 !important; font-size:25px; font-weight:950; letter-spacing:1.5px; }
+.sidebar-brand { color:#0750B8 !important; font-size:25px; font-weight:950; letter-spacing:1.5px; }
 .sidebar-caption { color:#65758B !important; font-size:12px; font-weight:700; letter-spacing:1px; }
-.flag-blue { height:7px; background:#174A91; border-radius:7px; }
-.flag-gold { height:4px; background:#D5A629; border-radius:7px; margin-top:5px; }
-.order-number { font-size:25px; color:#123E79; font-weight:900; }
+.flag-blue { height:7px; background:#0750B8; border-radius:7px; }
+.flag-gold { height:4px; background:#E9A817; border-radius:7px; margin-top:5px; }
+.order-number { font-size:25px; color:#0750B8; font-weight:900; }
 .order-address { font-size:18px; color:#17212F; font-weight:750; }
 .small-note { color:#64748B; font-size:13px; }
 .priority-high { color:#A32121; font-weight:900; }
-.priority-normal { color:#174A91; font-weight:800; }
+.priority-normal { color:#0750B8; font-weight:800; }
+/* Identidad visual inspirada en la referencia OptiRuta para PC */
+.optiruta-top {
+  display:flex; align-items:center; justify-content:space-between; gap:24px;
+  background:linear-gradient(112deg,#FFFFFF 0%,#FFFFFF 66%,#FFFAEB 100%);
+  border:1px solid #DCE6F3; border-left:7px solid #0750B8; border-radius:20px;
+  padding:24px 28px; margin:0 0 24px; box-shadow:0 8px 24px rgba(18,59,112,.075);
+  animation:optirutaEntrada .55s ease-out both;
+}
+.optiruta-brand {
+  color:#0750B8 !important; font-size:clamp(34px,4vw,54px); font-weight:950;
+  letter-spacing:-2px; line-height:1; text-shadow:none; animation:none; white-space:nowrap;
+}
+.optiruta-brand .gold { color:#E9A817 !important; }
+.optiruta-brand .delivery { display:block; margin-top:5px; color:#0750B8 !important; font-size:11px;
+  letter-spacing:7px; font-weight:850; text-align:right; }
+.optiruta-slogan { border-left:2px solid #E9A817; padding-left:20px; color:#0750B8 !important;
+  font-size:clamp(15px,1.6vw,21px); font-weight:850; line-height:1.25; max-width:260px; }
+.optiruta-slogan small { display:block; margin-top:7px; color:#6B7890 !important; font-size:12px; font-weight:650; }
+.optiruta-tag { margin-top:0; background:#0750B8; color:#FFFFFF !important; border:1px solid #0750B8;
+  border-radius:999px; padding:11px 16px; font-size:13px; font-weight:800; text-align:center; }
+.sidebar-brand { font-size:28px; letter-spacing:-1px; }
+.sidebar-brand .gold { color:#E9A817 !important; }
+.sidebar-caption { letter-spacing:1.8px; }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong { color:#0750B8 !important; }
+[data-testid="stSidebar"] [role="radiogroup"] { gap:5px; }
+[data-testid="stSidebar"] [role="radiogroup"] label {
+  background:#F7F9FD; border:1px solid #E1E8F2; border-radius:10px; padding:9px 10px;
+}
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+  background:#EAF2FF; border-color:#8FB5EF; box-shadow:inset 3px 0 #0750B8;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button { min-height:42px !important; }
+[data-testid="stDataFrame"] { box-shadow:0 4px 15px rgba(18,59,112,.04); }
 @media (max-width: 760px) {
  [data-testid="stMainBlockContainer"] { padding-left:1rem; padding-right:1rem; padding-top:2.6rem; }
  h1 { font-size:1.7rem !important; }
  .optiruta-top { padding:17px; }
 }
-
-/* OptiRuta Delivery: azul, oro y blanco */
-:root { color-scheme: light !important; }
-.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] { background:#FFFFFF !important; color:#17243A !important; }
-[data-testid="stHeader"] { background:rgba(255,255,255,.96) !important; }
-[data-testid="stSidebar"] { background:#FFFFFF !important; border-right:1px solid #DCE4EF !important; }
-.stButton > button, [data-testid="stFormSubmitButton"] > button { border-radius:12px !important; font-weight:750 !important; border:1px solid #0750B8 !important; }
-.stButton > button[kind="primary"], [data-testid="stFormSubmitButton"] > button { background:#0750B8 !important; color:#FFFFFF !important; }
-[data-testid="stMetric"] { background:#FFFFFF; border:1px solid #DCE4EF; border-radius:14px; padding:14px; }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -247,9 +270,16 @@ def maps_url(address):
 
 
 def brand_header(subtitle="Sistema de gestión de delivery"):
+    # Cabecera de marca adaptada al panel de PC; conserva las funciones y la API.
+    safe_subtitle = (str(subtitle).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
     st.markdown(
-        '<div class="optiruta-top"><div class="optiruta-brand">OPTIRUTA</div>'
-        f'<div class="optiruta-tag">{subtitle}</div></div>',
+        '<div class="optiruta-top">'
+        '<div class="optiruta-brand">Opti<span class="gold">Ruta</span>'
+        '<span class="delivery">DELIVERY</span></div>'
+        '<div class="optiruta-slogan">Tu ruta,<br>nuestro compromiso'
+        '<small>Gestión de pedidos y entregas</small></div>'
+        f'<div class="optiruta-tag">{safe_subtitle}</div>'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -315,7 +345,7 @@ role = str(user.get("Rol", "")).upper()
 uid = user.get("ID_Referencia", "")
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-brand">OPTIRUTA</div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-brand">Opti<span class="gold">Ruta</span></div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
     st.markdown('<div class="flag-blue"></div><div class="flag-gold"></div>', unsafe_allow_html=True)
     st.write("")
     st.write(f"**{user.get('Usuario', 'Usuario')}**")
@@ -323,7 +353,7 @@ with st.sidebar:
     if role == "ADMIN":
         st.markdown("**MENÚ PRINCIPAL**")
         st.radio(
-            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Perfil del conductor", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
+            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
             key="admin_section", label_visibility="collapsed"
         )
     st.divider()
@@ -332,55 +362,7 @@ with st.sidebar:
         st.session_state.portal = None
         st.rerun()
 
-# -------------------- PERFIL DEL CONDUCTOR --------------------
-if role == "ADMIN" and st.session_state.get("admin_section") == "Perfil del conductor":
-    brand_header("Perfil del conductor · Azul y oro")
-    st.title("Perfil del conductor")
-    st.caption("Elegí un conductor, revisá sus datos y guardá su foto de perfil.")
-    drivers = df("CONDUCTORES")
-    if drivers.empty:
-        st.info("No hay conductores registrados en la hoja CONDUCTORES.")
-    else:
-        id_col = "ID_Conductor" if "ID_Conductor" in drivers.columns else drivers.columns[0]
-        name_col = "Nombre_Completo" if "Nombre_Completo" in drivers.columns else id_col
-        choices = {f"{row.get(name_col, row.get(id_col, 'Conductor'))} · {row.get(id_col, '')}": row for _, row in drivers.iterrows()}
-        chosen = st.selectbox("Conductor", list(choices.keys()))
-        record = choices[chosen]
-        col_photo, col_info = st.columns([1, 2])
-        with col_photo:
-            photo_url = str(record.get("Foto_URL", "") or "").strip()
-            if photo_url and photo_url.lower() != "nan":
-                st.image(photo_url, caption="Foto actual", use_container_width=True)
-            else:
-                st.markdown('<div style="padding:28px;border:2px dashed #D5E1F0;border-radius:16px;text-align:center;color:#0750B8">📷<br>Sin foto de perfil</div>', unsafe_allow_html=True)
-            uploaded_photo = st.file_uploader("Nueva foto (JPG, PNG o WEBP)", type=["jpg","jpeg","png","webp"], key="driver_profile_photo")
-            if uploaded_photo and st.button("Guardar foto de perfil", type="primary"):
-                try:
-                    import base64
-                    payload = {
-                        "action": "save_driver_photo",
-                        "api_key": API_KEY,
-                        "user": st.session_state.get("user"),
-                        "ID_Conductor": str(record.get(id_col, "")),
-                        "mime_type": uploaded_photo.type or "image/jpeg",
-                        "image_base64": base64.b64encode(uploaded_photo.getvalue()).decode("ascii")
-                    }
-                    response = requests.post(API_URL, json=payload, timeout=60)
-                    result = response.json()
-                    if result.get("status") == "ok":
-                        st.success("Foto guardada. Actualizá la página para ver el cambio.")
-                        st.rerun()
-                    else:
-                        st.error(result.get("message", "No se pudo guardar la foto."))
-                except Exception as exc:
-                    st.error(f"No se pudo guardar la foto: {exc}")
-        with col_info:
-            st.subheader(str(record.get(name_col, "Conductor")))
-            for field in ["ID_Conductor", "Telefono", "Estado", "Fecha_Ingreso", "Fecha_Baja", "Observaciones", "Foto_URL"]:
-                if field in drivers.columns and str(record.get(field, "")).strip() not in ["", "nan", "None"]:
-                    st.write(f"**{field.replace('_', ' ')}:** {record.get(field)}")
-    st.stop()
-
+# -------------------- ADMINISTRADOR --------------------
 if role == "ADMIN":
     brand_header("Panel de administración · Moneda: PYG")
     st.caption("En los formularios, usá Tab para pasar al siguiente campo y Enter dentro de los campos de texto multilínea para escribir otro renglón. En el inicio de sesión, Enter confirma el acceso.")
