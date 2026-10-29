@@ -191,13 +191,13 @@ def _normalizar_busqueda(value):
 
 
 def buscar_cliente(prefix):
-    """Busca clientes existentes; solo rellena campos, nunca crea ni modifica clientes."""
+    """Busca en CLIENTES y copia los datos exactos del registro seleccionado."""
     st.markdown("### 👤 Buscar cliente existente")
     clientes = rows("CLIENTES")
     query = st.text_input(
         "Buscar por nombre o teléfono",
         key=f"{prefix}_client_search",
-        placeholder="Escribí el nombre o el teléfono y presioná Enter"
+        placeholder="Escribí el nombre o el teléfono"
     ).strip()
 
     coincidencias = []
@@ -208,49 +208,132 @@ def buscar_cliente(prefix):
                 continue
             nombre = str(client.get("Nombre_Cliente", "") or "").strip()
             telefono = str(client.get("Telefono_Cliente", "") or "").strip()
-            direccion = str(client.get("Direccion_Habitual", "") or "").strip()
-            maps = str(client.get("Ubicacion_Google_Maps", "") or "").strip()
             if q in _normalizar_busqueda(nombre) or q in _normalizar_busqueda(telefono):
                 client_id = str(client.get("ID_Cliente", "") or "").strip()
-                label = f"{nombre or '(Sin nombre)'} · {telefono or 'Sin teléfono'}"
-                if client_id:
-                    label += f" · {client_id}"
-                else:
-                    label += f" · fila {index + 1}"
-                coincidencias.append((label, client, (client_id or f"fila-{index}", telefono, nombre)))
+                # La etiqueta incorpora ID y fila para distinguir incluso registros duplicados.
+                label = f"{nombre or '(Sin nombre)'} · {telefono or 'Sin teléfono'} · {client_id or 'fila ' + str(index + 1)}"
+                identity = f"{client_id or 'sin-id'}::fila-{index}"
+                coincidencias.append((label, client, identity))
 
     options = ["— No seleccionar un cliente existente —"] + [item[0] for item in coincidencias]
+    choice_key = f"{prefix}_client_choice"
+    if st.session_state.get(choice_key) not in options:
+        st.session_state[choice_key] = options[0]
     selected_label = st.selectbox(
-        "Resultados de clientes",
-        options,
-        key=f"{prefix}_client_choice",
-        help="Elegí un resultado para completar nombre, teléfono, dirección y ubicación."
+        "Resultados de clientes", options, key=choice_key,
+        help="Elegí un resultado para cargar sus datos guardados."
     )
     selected = next((item for item in coincidencias if item[0] == selected_label), None)
-
-    if q and not coincidencias:
-        st.info("No encontramos coincidencias. Podés cargar los datos manualmente; esta búsqueda no crea clientes.")
-    elif not q:
-        st.caption("La búsqueda consulta la hoja CLIENTES. Escribí al menos parte del nombre o del teléfono.")
+    identity_key = f"{prefix}_loaded_client_identity"
+    previous_identity = st.session_state.get(identity_key)
 
     if selected:
         _, client, identity = selected
-        identity_key = f"{prefix}_loaded_client_identity"
-        if st.session_state.get(identity_key) != identity:
+        # Sin caché de valores: cada selección aplica el registro que corresponde.
+        if previous_identity != identity:
             st.session_state[f"{prefix}_customer_name"] = str(client.get("Nombre_Cliente", "") or "")
             st.session_state[f"{prefix}_customer_phone"] = str(client.get("Telefono_Cliente", "") or "")
             st.session_state[f"{prefix}_customer_address"] = str(client.get("Direccion_Habitual", "") or "")
             st.session_state[f"{prefix}_customer_maps"] = str(client.get("Ubicacion_Google_Maps", "") or "")
             st.session_state[identity_key] = identity
+    elif previous_identity:
+        # Al deseleccionar un cliente, limpiar sus datos para no dejar los del anterior.
+        for field in ("customer_name", "customer_phone", "customer_address", "customer_maps"):
+            st.session_state[f"{prefix}_{field}"] = ""
+        st.session_state[identity_key] = None
+
+    if q and not coincidencias:
+        st.info("No encontramos coincidencias. Podés ingresar un cliente nuevo; no se crea desde la búsqueda.")
+    elif not q:
+        st.caption("La búsqueda consulta la hoja CLIENTES. Elegí un resultado para recuperar sus datos.")
     return selected[1] if selected else None
 
+
+def _digits_phone(value):
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+
+def _same_customer(a, b):
+    """Compara identidad por teléfono normalizado o, si falta, por nombre normalizado."""
+    phone_a, phone_b = _digits_phone(a.get("Telefono_Cliente")), _digits_phone(b.get("Telefono_Cliente"))
+    name_a, name_b = _normalizar_busqueda(a.get("Nombre_Cliente")), _normalizar_busqueda(b.get("Nombre_Cliente"))
+    return bool((phone_a and phone_b and phone_a == phone_b) or (name_a and name_b and name_a == name_b))
+
+
+def asegurar_cliente(record):
+    """Registra al cliente una sola vez desde el flujo existente de pedido; no agrega formularios."""
+    name = str(record.get("Nombre_Cliente", "") or "").strip()
+    phone = str(record.get("Telefono_Cliente", "") or "").strip()
+    if not name or not phone:
+        return
+    clientes = rows("CLIENTES")
+    if any(_same_customer(record, client) for client in clientes if isinstance(client, dict)):
+        return
+    client_record = {
+        "ID_Cliente": "",
+        "Nombre_Cliente": name,
+        "Telefono_Cliente": phone,
+        "Direccion_Habitual": str(record.get("Direccion_Entrega", "") or "").strip(),
+        "Ubicacion_Google_Maps": str(record.get("Ubicacion_Google_Maps", "") or "").strip(),
+        "Fecha_Registro": datetime.now().isoformat(timespec="seconds"),
+        "Estado": "Activo",
+        "ID_Emprendedor": str(record.get("ID_Emprendedor", "") or "")
+    }
+    # Si la agenda no puede actualizarse, no bloqueamos el pedido; la API reportará el error.
+    api("save", sheet="CLIENTES", record=client_record)
+
+
+def pedido_duplicado_reciente(record, segundos=30):
+    """Evita reenvíos accidentales del mismo pedido dentro de una ventana breve."""
+    now = datetime.now()
+    fields = ("ID_Emprendedor", "Nombre_Cliente", "Telefono_Cliente", "Direccion_Entrega",
+              "Descripcion_Pedido", "Costo_Producto", "Costo_Envio", "Metodo_Pago")
+    for old in rows("PEDIDOS"):
+        if not isinstance(old, dict):
+            continue
+        try:
+            stamp = str(old.get("Fecha_Carga", "") or "").replace("Z", "+00:00")
+            old_dt = datetime.fromisoformat(stamp)
+            if old_dt.tzinfo is not None:
+                old_dt = old_dt.replace(tzinfo=None)
+            if abs((now - old_dt).total_seconds()) > segundos:
+                continue
+        except Exception:
+            continue
+        same = True
+        for field in fields:
+            if field in ("Nombre_Cliente", "Direccion_Entrega", "Descripcion_Pedido", "Metodo_Pago"):
+                same = _normalizar_busqueda(old.get(field)) == _normalizar_busqueda(record.get(field))
+            elif field == "Telefono_Cliente":
+                same = _digits_phone(old.get(field)) == _digits_phone(record.get(field))
+            else:
+                same = str(old.get(field, "") or "") == str(record.get(field, "") or "")
+            if not same:
+                break
+        if same:
+            return True
+    return False
+
+
+def guardar_pedido_seguro(record):
+    """Centraliza la protección contra pedidos repetidos y clientes duplicados."""
+    if pedido_duplicado_reciente(record):
+        st.warning("No se guardó: encontramos un pedido idéntico registrado hace muy poco. Revisá la lista de pedidos antes de volver a enviarlo.")
+        return
+    asegurar_cliente(record)
+    save("PEDIDOS", record)
 
 
 def save(sheet, record):
     result = api("save", sheet=sheet, record=record)
     if result:
-        st.success("Guardado correctamente.")
+        if result.get("duplicate"):
+            st.warning(result.get("message", "No se guardó porque el registro ya existe."))
+            return False
+        st.success(result.get("message", "Guardado correctamente."))
         st.rerun()
+        return True
+    return False
 
 
 def distance_km(lat1, lon1, lat2, lon2):
@@ -449,7 +532,7 @@ if role == "ADMIN":
                 if not customer or not address:
                     st.error("Completá el nombre y la dirección.")
                 else:
-                    save("PEDIDOS", record)
+                    guardar_pedido_seguro(record)
 
         st.divider()
         st.subheader("Asignar o modificar pedidos")
@@ -741,7 +824,7 @@ elif role == "EMPRENDEDOR":
                 "Fecha_Entrega": "", "Estado_Liquidacion": "Pendiente", "Estado_Registro": "Activo", "Observaciones": ""
             }
             if customer and address:
-                save("PEDIDOS", record)
+                guardar_pedido_seguro(record)
             else:
                 st.error("Completá el nombre y la dirección.")
 
