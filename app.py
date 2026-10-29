@@ -222,6 +222,20 @@ def customer_picker(prefix):
     return chosen, clients, identity
 
 
+def sync_customer_fields(prefix, selected_client, identity):
+    """Actualiza los campos del formulario cuando cambia el cliente seleccionado."""
+    identity_key = f"{prefix}_loaded_client_identity"
+    if st.session_state.get(identity_key) == identity:
+        return
+    # Preparar el estado antes de crear los widgets; así Streamlit no conserva
+    # los valores vacíos/anteriores al cambiar de cliente.
+    st.session_state[f"{prefix}_customer_name"] = str(selected_client.get("Nombre_Cliente", "") or "")
+    st.session_state[f"{prefix}_customer_phone"] = str(selected_client.get("Telefono_Cliente", "") or "")
+    st.session_state[f"{prefix}_customer_address"] = str(selected_client.get("Direccion_Habitual", "") or "")
+    st.session_state[f"{prefix}_customer_maps"] = str(selected_client.get("Ubicacion_Google_Maps", "") or "")
+    st.session_state[identity_key] = identity
+
+
 def remember_customer(clients, customer, phone, address, maps_location):
     """Registra clientes nuevos sin duplicar por teléfono o nombre normalizado."""
     name = str(customer or "").strip()
@@ -409,16 +423,17 @@ if role == "ADMIN":
         motos = rows("MOTOS")
         st.markdown("### 🧾 Datos del nuevo pedido")
         selected_client, known_clients, client_identity = customer_picker("admin_order")
+        sync_customer_fields("admin_order", selected_client, client_identity)
         with st.form("new_order", enter_to_submit=False):
             em_options = {
                 f"{x.get('Nombre_Comercial')} ({x.get('ID_Emprendedor')})": x.get("ID_Emprendedor")
                 for x in entrepreneurs if x.get("Estado", "Activo") == "Activo"
             }
             em_label = st.selectbox("Emprendedor", list(em_options) or ["Sin emprendedores"])
-            customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"admin_customer_name_{client_identity}")
-            phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"admin_customer_phone_{client_identity}")
-            address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"admin_customer_address_{client_identity}")
-            maps_location = st.text_input("Ubicación de Google Maps", value=str(selected_client.get("Ubicacion_Google_Maps", "") or ""), placeholder="Pegá el enlace compartido", key=f"admin_customer_maps_{client_identity}")
+            customer = st.text_input("Nombre del cliente", key="admin_order_customer_name")
+            phone = st.text_input("Teléfono", key="admin_order_customer_phone")
+            address = st.text_input("Dirección de entrega", key="admin_order_customer_address")
+            maps_location = st.text_input("Ubicación de Google Maps", placeholder="Pegá el enlace compartido", key="admin_order_customer_maps")
             description = st.text_area("Descripción del pedido", height=90)
             priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"])
             a, b, c = st.columns(3)
@@ -701,15 +716,15 @@ elif role == "EMPRENDEDOR":
     st.title("Cargar un pedido")
     st.markdown("### 📦 Información del pedido")
     selected_client, known_clients, client_identity = customer_picker("entrepreneur_order")
+    sync_customer_fields("entrepreneur_order", selected_client, client_identity)
     with st.form("entrepreneur_order", enter_to_submit=False):
-        customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"entrepreneur_customer_name_{client_identity}")
-        phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"entrepreneur_customer_phone_{client_identity}")
-        address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"entrepreneur_customer_address_{client_identity}")
+        customer = st.text_input("Nombre del cliente", key="entrepreneur_order_customer_name")
+        phone = st.text_input("Teléfono", key="entrepreneur_order_customer_phone")
+        address = st.text_input("Dirección de entrega", key="entrepreneur_order_customer_address")
         maps_location = st.text_input(
             "Ubicación de Google Maps (pegá el enlace compartido)",
-            value=str(selected_client.get("Ubicacion_Google_Maps", "") or ""),
             placeholder="https://maps.app.goo.gl/...",
-            key=f"entrepreneur_customer_maps_{client_identity}"
+            key="entrepreneur_order_customer_maps"
         )
         st.caption("En Google Maps: abrí la ubicación del cliente, tocá Compartir y copiá el enlace.")
         description = st.text_area("Descripción del pedido", height=90)
