@@ -160,12 +160,11 @@ def df(sheet):
 
 
 def customer_picker(prefix):
-    """Busca clientes; las claves versionadas permiten limpiar la búsqueda tras guardar."""
+    """Busca clientes en la hoja compartida CLIENTES y devuelve el elegido."""
     clients = rows("CLIENTES")
-    form_version = st.session_state.get(f"{prefix}_version", 0)
     query = st.text_input(
         "Buscar cliente existente por nombre o teléfono",
-        key=f"{prefix}_v{form_version}_client_search",
+        key=f"{prefix}_client_search",
         placeholder="Escribí un nombre o número para buscar"
     ).strip().lower()
     matches = []
@@ -190,7 +189,7 @@ def customer_picker(prefix):
     selected = st.selectbox(
         "Resultado de búsqueda",
         options,
-        key=f"{prefix}_v{form_version}_client_selected"
+        key=f"{prefix}_client_selected"
     )
     if query and not matches:
         st.caption("No encontramos coincidencias. Podés cargarlo como cliente nuevo.")
@@ -720,36 +719,35 @@ elif role == "EMPRENDEDOR":
     st.title("Cargar un pedido")
     st.markdown("### 📦 Información del pedido")
     selected_client, known_clients, client_identity = customer_picker("entrepreneur_order")
-    order_version = st.session_state.get("entrepreneur_order_version", 0)
-    with st.form(f"entrepreneur_order_v{order_version}", enter_to_submit=False):
-        customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"entrepreneur_customer_name_v{order_version}_{client_identity}")
-        phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"entrepreneur_customer_phone_v{order_version}_{client_identity}")
-        address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"entrepreneur_customer_address_v{order_version}_{client_identity}")
+    with st.form("entrepreneur_order", enter_to_submit=False):
+        customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"entrepreneur_customer_name_{client_identity}")
+        phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"entrepreneur_customer_phone_{client_identity}")
+        address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"entrepreneur_customer_address_{client_identity}")
         maps_location = st.text_input(
             "Ubicación de Google Maps (pegá el enlace compartido)",
             value=str(selected_client.get("Ubicacion_Google_Maps", "") or ""),
             placeholder="https://maps.app.goo.gl/...",
-            key=f"entrepreneur_customer_maps_v{order_version}_{client_identity}"
+            key=f"entrepreneur_customer_maps_{client_identity}"
         )
         st.caption("En Google Maps: abrí la ubicación del cliente, tocá Compartir y copiá el enlace.")
-        description = st.text_area("Descripción del pedido", height=90, key=f"entrepreneur_description_v{order_version}")
-        priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"], help="Urgente solo para pedidos que realmente requieren atención inmediata.", key=f"entrepreneur_priority_v{order_version}")
+        description = st.text_area("Descripción del pedido", height=90)
+        priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"], help="Urgente solo para pedidos que realmente requieren atención inmediata.")
         a, b, c = st.columns(3)
-        product = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000, key=f"entrepreneur_product_v{order_version}")
-        shipping = b.number_input("Costo del envío (Gs.)", min_value=0, step=1000, key=f"entrepreneur_shipping_v{order_version}")
-        prepaid = c.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, key=f"entrepreneur_prepaid_v{order_version}")
-        method = st.selectbox("Método de pago acordado por WhatsApp", ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"], key=f"entrepreneur_method_v{order_version}")
+        product = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000)
+        shipping = b.number_input("Costo del envío (Gs.)", min_value=0, step=1000)
+        prepaid = c.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000)
+        method = st.selectbox("Método de pago acordado por WhatsApp", ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"])
         if method == "Efectivo + transferencia":
-            transfer_amount = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000, key=f"entrepreneur_transfer_amount_v{order_version}")
+            transfer_amount = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000)
         elif method in ["Transferencia al emprendedor", "Pagado adelantado"]:
             transfer_amount = int(product + shipping)
         else:
             transfer_amount = 0
         if transfer_amount > 0:
-            transfer_status = st.selectbox("Estado de la transferencia", ["Pendiente de confirmar", "Acreditada al emprendedor"], help="Marcá acreditada únicamente después de verificar el ingreso en la cuenta.", key=f"entrepreneur_transfer_status_v{order_version}")
+            transfer_status = st.selectbox("Estado de la transferencia", ["Pendiente de confirmar", "Acreditada al emprendedor"], help="Marcá acreditada únicamente después de verificar el ingreso en la cuenta.")
         else:
             transfer_status = "No corresponde"
-        payment_note = st.text_area("Instrucciones / acuerdo conversado por WhatsApp", height=75, placeholder="Ej.: el cliente ya transfirió Gs. 20.000 al emprendedor; el resto se cobra en efectivo.", key=f"entrepreneur_payment_note_v{order_version}")
+        payment_note = st.text_area("Instrucciones / acuerdo conversado por WhatsApp", height=75, placeholder="Ej.: el cliente ya transfirió Gs. 20.000 al emprendedor; el resto se cobra en efectivo.")
         st.caption("El conductor no contactará al cliente. Dejá asentado el acuerdo. Solo marcá la transferencia como acreditada cuando ya verificaste el dinero.")
         if st.form_submit_button("ENVIAR PEDIDO", use_container_width=True):
             total = int(product + shipping)
@@ -768,11 +766,7 @@ elif role == "EMPRENDEDOR":
             if customer and address:
                 if not selected_client:
                     remember_customer(known_clients, customer, phone, address, maps_location)
-                result = api("save", sheet="PEDIDOS", record=record)
-                if result:
-                    st.session_state["entrepreneur_order_version"] = order_version + 1
-                    st.success("Pedido guardado correctamente. El formulario quedó limpio para cargar el siguiente.")
-                    st.rerun()
+                save("PEDIDOS", record)
             else:
                 st.error("Completá el nombre y la dirección.")
 
