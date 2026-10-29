@@ -90,6 +90,39 @@ hr { border-color:#E0E7F0 !important; }
 .small-note { color:#64748B; font-size:13px; }
 .priority-high { color:#A32121; font-weight:900; }
 .priority-normal { color:#174A91; font-weight:800; }
+/* Identidad visual inspirada en la referencia OptiRuta para PC */
+.optiruta-top {
+  display:flex; align-items:center; justify-content:space-between; gap:24px;
+  background:linear-gradient(112deg,#FFFFFF 0%,#FFFFFF 66%,#FFF8E6 100%);
+  border:1px solid #DCE6F3; border-left:7px solid #174A91; border-radius:20px;
+  padding:24px 28px; margin:0 0 24px; box-shadow:0 8px 24px rgba(18,59,112,.075);
+  animation:optirutaEntrada .55s ease-out both;
+}
+.optiruta-brand {
+  color:#174A91 !important; font-size:clamp(34px,4vw,54px); font-weight:950;
+  letter-spacing:-2px; line-height:1; text-shadow:none; animation:none; white-space:nowrap;
+}
+.optiruta-brand .gold { color:#E9AA12 !important; }
+.optiruta-brand .delivery { display:block; margin-top:5px; color:#174A91 !important; font-size:11px;
+  letter-spacing:7px; font-weight:850; text-align:right; }
+.optiruta-slogan { border-left:2px solid #D5A629; padding-left:20px; color:#174A91 !important;
+  font-size:clamp(15px,1.6vw,21px); font-weight:850; line-height:1.25; max-width:260px; }
+.optiruta-slogan small { display:block; margin-top:7px; color:#6B7890 !important; font-size:12px; font-weight:650; }
+.optiruta-tag { margin-top:0; background:#174A91; color:#FFFFFF !important; border:1px solid #174A91;
+  border-radius:999px; padding:11px 16px; font-size:13px; font-weight:800; text-align:center; }
+.sidebar-brand { font-size:28px; letter-spacing:-1px; }
+.sidebar-brand .gold { color:#E9AA12 !important; }
+.sidebar-caption { letter-spacing:1.8px; }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong { color:#174A91 !important; }
+[data-testid="stSidebar"] [role="radiogroup"] { gap:5px; }
+[data-testid="stSidebar"] [role="radiogroup"] label {
+  background:#F7F9FD; border:1px solid #E1E8F2; border-radius:10px; padding:9px 10px;
+}
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+  background:#EAF2FF; border-color:#8FB5EF; box-shadow:inset 3px 0 #174A91;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button { min-height:42px !important; }
+[data-testid="stDataFrame"] { box-shadow:0 4px 15px rgba(18,59,112,.04); }
 @media (max-width: 760px) {
  [data-testid="stMainBlockContainer"] { padding-left:1rem; padding-right:1rem; padding-top:2.6rem; }
  h1 { font-size:1.7rem !important; }
@@ -149,6 +182,72 @@ def df(sheet):
     return pd.DataFrame(rows(sheet))
 
 
+def customer_picker(prefix):
+    """Busca clientes en la hoja compartida CLIENTES y devuelve el elegido."""
+    clients = rows("CLIENTES")
+    query = st.text_input(
+        "Buscar cliente existente por nombre o teléfono",
+        key=f"{prefix}_client_search",
+        placeholder="Escribí un nombre o número para buscar"
+    ).strip().lower()
+    matches = []
+    if query:
+        for client in clients:
+            name = str(client.get("Nombre_Cliente", "") or "")
+            phone = str(client.get("Telefono_Cliente", "") or "")
+            if query in name.lower() or query in phone.lower():
+                matches.append(client)
+    options = ["➕ Cliente nuevo"]
+    by_label = {}
+    for i, client in enumerate(matches):
+        name = str(client.get("Nombre_Cliente", "Cliente sin nombre") or "Cliente sin nombre")
+        phone = str(client.get("Telefono_Cliente", "") or "Sin teléfono")
+        cid = str(client.get("ID_Cliente", "") or i)
+        label = f"{name} — {phone} [{cid}]"
+        # Evita etiquetas duplicadas si la hoja contiene registros repetidos.
+        while label in by_label:
+            label += " ·"
+        options.append(label)
+        by_label[label] = client
+    selected = st.selectbox(
+        "Resultado de búsqueda",
+        options,
+        key=f"{prefix}_client_selected"
+    )
+    if query and not matches:
+        st.caption("No encontramos coincidencias. Podés cargarlo como cliente nuevo.")
+    chosen = by_label.get(selected, {})
+    identity = str(chosen.get("ID_Cliente") or chosen.get("Telefono_Cliente") or chosen.get("Nombre_Cliente") or "nuevo")
+    # La clave cambia al elegir otro cliente para que sus datos se completen automáticamente.
+    return chosen, clients, identity
+
+
+def remember_customer(clients, customer, phone, address, maps_location):
+    """Registra clientes nuevos sin duplicar por teléfono o nombre normalizado."""
+    name = str(customer or "").strip()
+    phone_text = str(phone or "").strip()
+    digits = "".join(ch for ch in phone_text if ch.isdigit())
+    norm_name = " ".join(name.lower().split())
+    for existing in clients:
+        existing_phone = str(existing.get("Telefono_Cliente", "") or "").strip()
+        existing_digits = "".join(ch for ch in existing_phone if ch.isdigit())
+        existing_name = " ".join(str(existing.get("Nombre_Cliente", "") or "").lower().split())
+        if (digits and existing_digits == digits) or (norm_name and existing_name == norm_name):
+            return
+    client_id = f"CLI-{digits}" if digits else f"CLI-{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
+    result = api("save", sheet="CLIENTES", record={
+        "ID_Cliente": client_id,
+        "Nombre_Cliente": name,
+        "Telefono_Cliente": phone_text,
+        "Direccion_Habitual": str(address or "").strip(),
+        "Ubicacion_Google_Maps": str(maps_location or "").strip(),
+        "Fecha_Registro": datetime.now().isoformat(timespec="seconds"),
+        "Estado": "Activo"
+    })
+    if not result:
+        st.warning("El pedido se guardará, pero no pudimos registrar al cliente en la agenda compartida. Revisá que exista la hoja CLIENTES en Google Sheets.")
+
+
 def save(sheet, record):
     result = api("save", sheet=sheet, record=record)
     if result:
@@ -171,9 +270,16 @@ def maps_url(address):
 
 
 def brand_header(subtitle="Sistema de gestión de delivery"):
+    # Cabecera de marca adaptada al panel de PC; conserva las funciones y la API.
+    safe_subtitle = (str(subtitle).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
     st.markdown(
-        '<div class="optiruta-top"><div class="optiruta-brand">OPTIRUTA</div>'
-        f'<div class="optiruta-tag">{subtitle}</div></div>',
+        '<div class="optiruta-top">'
+        '<div class="optiruta-brand">Opti<span class="gold">Ruta</span>'
+        '<span class="delivery">DELIVERY</span></div>'
+        '<div class="optiruta-slogan">Tu ruta,<br>nuestro compromiso'
+        '<small>Gestión de pedidos y entregas</small></div>'
+        f'<div class="optiruta-tag">{safe_subtitle}</div>'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -239,7 +345,7 @@ role = str(user.get("Rol", "")).upper()
 uid = user.get("ID_Referencia", "")
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-brand">OPTIRUTA</div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-brand">Opti<span class="gold">Ruta</span></div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
     st.markdown('<div class="flag-blue"></div><div class="flag-gold"></div>', unsafe_allow_html=True)
     st.write("")
     st.write(f"**{user.get('Usuario', 'Usuario')}**")
@@ -302,16 +408,17 @@ if role == "ADMIN":
         drivers = rows("CONDUCTORES")
         motos = rows("MOTOS")
         st.markdown("### 🧾 Datos del nuevo pedido")
+        selected_client, known_clients, client_identity = customer_picker("admin_order")
         with st.form("new_order", enter_to_submit=False):
             em_options = {
                 f"{x.get('Nombre_Comercial')} ({x.get('ID_Emprendedor')})": x.get("ID_Emprendedor")
                 for x in entrepreneurs if x.get("Estado", "Activo") == "Activo"
             }
             em_label = st.selectbox("Emprendedor", list(em_options) or ["Sin emprendedores"])
-            customer = st.text_input("Nombre del cliente")
-            phone = st.text_input("Teléfono")
-            address = st.text_input("Dirección de entrega")
-            maps_location = st.text_input("Ubicación de Google Maps", placeholder="Pegá el enlace compartido")
+            customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"admin_customer_name_{client_identity}")
+            phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"admin_customer_phone_{client_identity}")
+            address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"admin_customer_address_{client_identity}")
+            maps_location = st.text_input("Ubicación de Google Maps", value=str(selected_client.get("Ubicacion_Google_Maps", "") or ""), placeholder="Pegá el enlace compartido", key=f"admin_customer_maps_{client_identity}")
             description = st.text_area("Descripción del pedido", height=90)
             priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"])
             a, b, c = st.columns(3)
@@ -344,6 +451,8 @@ if role == "ADMIN":
                 if not customer or not address:
                     st.error("Completá el nombre y la dirección.")
                 else:
+                    if not selected_client:
+                        remember_customer(known_clients, customer, phone, address, maps_location)
                     save("PEDIDOS", record)
 
         st.divider()
@@ -591,13 +700,16 @@ elif role == "EMPRENDEDOR":
     st.caption("Usá Tab para pasar al siguiente campo. En descripción e instrucciones podés presionar Enter para escribir otro renglón.")
     st.title("Cargar un pedido")
     st.markdown("### 📦 Información del pedido")
+    selected_client, known_clients, client_identity = customer_picker("entrepreneur_order")
     with st.form("entrepreneur_order", enter_to_submit=False):
-        customer = st.text_input("Nombre del cliente")
-        phone = st.text_input("Teléfono")
-        address = st.text_input("Dirección de entrega")
+        customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"entrepreneur_customer_name_{client_identity}")
+        phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"entrepreneur_customer_phone_{client_identity}")
+        address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"entrepreneur_customer_address_{client_identity}")
         maps_location = st.text_input(
             "Ubicación de Google Maps (pegá el enlace compartido)",
-            placeholder="https://maps.app.goo.gl/..."
+            value=str(selected_client.get("Ubicacion_Google_Maps", "") or ""),
+            placeholder="https://maps.app.goo.gl/...",
+            key=f"entrepreneur_customer_maps_{client_identity}"
         )
         st.caption("En Google Maps: abrí la ubicación del cliente, tocá Compartir y copiá el enlace.")
         description = st.text_area("Descripción del pedido", height=90)
@@ -634,6 +746,8 @@ elif role == "EMPRENDEDOR":
                 "Fecha_Entrega": "", "Estado_Liquidacion": "Pendiente", "Estado_Registro": "Activo", "Observaciones": ""
             }
             if customer and address:
+                if not selected_client:
+                    remember_customer(known_clients, customer, phone, address, maps_location)
                 save("PEDIDOS", record)
             else:
                 st.error("Completá el nombre y la dirección.")
