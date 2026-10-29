@@ -860,22 +860,44 @@ elif role == "EMPRENDEDOR":
                         except (TypeError, ValueError):
                             return 0
 
-                    with st.form("entrepreneur_edit_order_form", enter_to_submit=False):
-                        edit_customer = st.text_input("Nombre del cliente", value=edit_text(original.get("Nombre_Cliente")), key="edit_customer")
-                        edit_phone = st.text_input("Teléfono", value=edit_text(original.get("Telefono_Cliente")), key="edit_phone")
-                        edit_address = st.text_input("Dirección de entrega", value=edit_text(original.get("Direccion_Entrega")), key="edit_address")
-                        edit_map = st.text_input("Ubicación de Google Maps", value=edit_text(original.get("Ubicacion_Google_Maps")), key="edit_map")
-                        edit_description = st.text_area("Descripción del pedido", value=edit_text(original.get("Descripcion_Pedido")), height=90, key="edit_description")
+                    # Streamlit conserva el estado de los widgets con key entre reruns.
+                    # Al cambiar el pedido, cargar explícitamente todos los valores del nuevo registro.
+                    if st.session_state.get("_entrepreneur_edit_loaded_id") != str(selected_order_id):
+                        st.session_state["_entrepreneur_edit_loaded_id"] = str(selected_order_id)
                         priorities = ["Normal", "Alta", "Urgente"]
-                        old_priority = edit_text(original.get("Prioridad", "Normal"))
-                        edit_priority = st.selectbox("Prioridad", priorities, index=priorities.index(old_priority) if old_priority in priorities else 0, key="edit_priority")
-                        ea, eb, ec = st.columns(3)
-                        edit_product = ea.number_input("Costo del producto (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Costo_Producto")), key="edit_product")
-                        edit_shipping = eb.number_input("Costo del envío (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Costo_Envio")), key="edit_shipping")
-                        edit_prepaid = ec.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Monto_Anticipado")), key="edit_prepaid")
                         payment_methods = ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"]
+                        transfer_states = ["No corresponde", "Pendiente de confirmar", "Acreditada al emprendedor"]
+                        old_priority = edit_text(original.get("Prioridad", "Normal"))
                         old_method = edit_text(original.get("Metodo_Pago", "Efectivo al recibir"))
-                        edit_method = st.selectbox("Método de pago acordado", payment_methods, index=payment_methods.index(old_method) if old_method in payment_methods else 0, key="edit_method")
+                        old_transfer_state = edit_text(original.get("Estado_Transferencia_Cliente", "No corresponde"))
+                        st.session_state["edit_customer"] = edit_text(original.get("Nombre_Cliente"))
+                        st.session_state["edit_phone"] = edit_text(original.get("Telefono_Cliente"))
+                        st.session_state["edit_address"] = edit_text(original.get("Direccion_Entrega"))
+                        st.session_state["edit_map"] = edit_text(original.get("Ubicacion_Google_Maps"))
+                        st.session_state["edit_description"] = edit_text(original.get("Descripcion_Pedido"))
+                        st.session_state["edit_priority"] = old_priority if old_priority in priorities else "Normal"
+                        st.session_state["edit_product"] = edit_number(original.get("Costo_Producto"))
+                        st.session_state["edit_shipping"] = edit_number(original.get("Costo_Envio"))
+                        st.session_state["edit_prepaid"] = edit_number(original.get("Monto_Anticipado"))
+                        st.session_state["edit_method"] = old_method if old_method in payment_methods else "Efectivo al recibir"
+                        st.session_state["edit_transfer"] = edit_number(original.get("Monto_Transferencia_Adicional"))
+                        st.session_state["edit_transfer_state"] = old_transfer_state if old_transfer_state in transfer_states else ("Pendiente de confirmar" if edit_number(original.get("Monto_Transferencia_Adicional")) > 0 else "No corresponde")
+                        st.session_state["edit_payment_note"] = edit_text(original.get("Instrucciones_Pago"))
+
+                    with st.form("entrepreneur_edit_order_form", enter_to_submit=False):
+                        edit_customer = st.text_input("Nombre del cliente", key="edit_customer")
+                        edit_phone = st.text_input("Teléfono", key="edit_phone")
+                        edit_address = st.text_input("Dirección de entrega", key="edit_address")
+                        edit_map = st.text_input("Ubicación de Google Maps", key="edit_map")
+                        edit_description = st.text_area("Descripción del pedido", height=90, key="edit_description")
+                        priorities = ["Normal", "Alta", "Urgente"]
+                        edit_priority = st.selectbox("Prioridad", priorities, key="edit_priority")
+                        ea, eb, ec = st.columns(3)
+                        edit_product = ea.number_input("Costo del producto (Gs.)", min_value=0, step=1000, key="edit_product")
+                        edit_shipping = eb.number_input("Costo del envío (Gs.)", min_value=0, step=1000, key="edit_shipping")
+                        edit_prepaid = ec.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, key="edit_prepaid")
+                        payment_methods = ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"]
+                        edit_method = st.selectbox("Método de pago acordado", payment_methods, key="edit_method")
                         old_transfer = edit_number(original.get("Monto_Transferencia_Adicional"))
                         if edit_method == "Efectivo + transferencia":
                             edit_transfer = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000, value=old_transfer, key="edit_transfer")
@@ -885,10 +907,8 @@ elif role == "EMPRENDEDOR":
                         else:
                             edit_transfer = 0
                         transfer_states = ["No corresponde", "Pendiente de confirmar", "Acreditada al emprendedor"]
-                        old_transfer_state = edit_text(original.get("Estado_Transferencia_Cliente", "No corresponde"))
-                        default_transfer_state = old_transfer_state if old_transfer_state in transfer_states else ("Pendiente de confirmar" if edit_transfer > 0 else "No corresponde")
-                        edit_transfer_state = st.selectbox("Estado de la transferencia", transfer_states, index=transfer_states.index(default_transfer_state), key="edit_transfer_state")
-                        edit_payment_note = st.text_area("Instrucciones / acuerdo de pago", value=edit_text(original.get("Instrucciones_Pago")), height=75, key="edit_payment_note")
+                        edit_transfer_state = st.selectbox("Estado de la transferencia", transfer_states, key="edit_transfer_state")
+                        edit_payment_note = st.text_area("Instrucciones / acuerdo de pago", height=75, key="edit_payment_note")
                         update_order = st.form_submit_button("GUARDAR CAMBIOS DEL PEDIDO", use_container_width=True)
 
                     if update_order:
