@@ -90,44 +90,21 @@ hr { border-color:#E0E7F0 !important; }
 .small-note { color:#64748B; font-size:13px; }
 .priority-high { color:#A32121; font-weight:900; }
 .priority-normal { color:#174A91; font-weight:800; }
-/* Identidad visual inspirada en la referencia OptiRuta para PC */
-.optiruta-top {
-  display:flex; align-items:center; justify-content:space-between; gap:24px;
-  background:linear-gradient(112deg,#FFFFFF 0%,#FFFFFF 66%,#FFF8E6 100%);
-  border:1px solid #DCE6F3; border-left:7px solid #174A91; border-radius:20px;
-  padding:24px 28px; margin:0 0 24px; box-shadow:0 8px 24px rgba(18,59,112,.075);
-  animation:optirutaEntrada .55s ease-out both;
-}
-.optiruta-brand {
-  color:#174A91 !important; font-size:clamp(34px,4vw,54px); font-weight:950;
-  letter-spacing:-2px; line-height:1; text-shadow:none; animation:none; white-space:nowrap;
-}
-.optiruta-brand .gold { color:#E9AA12 !important; }
-.optiruta-brand .delivery { display:block; margin-top:5px; color:#174A91 !important; font-size:11px;
-  letter-spacing:7px; font-weight:850; text-align:right; }
-.optiruta-slogan { border-left:2px solid #D5A629; padding-left:20px; color:#174A91 !important;
-  font-size:clamp(15px,1.6vw,21px); font-weight:850; line-height:1.25; max-width:260px; }
-.optiruta-slogan small { display:block; margin-top:7px; color:#6B7890 !important; font-size:12px; font-weight:650; }
-.optiruta-tag { margin-top:0; background:#174A91; color:#FFFFFF !important; border:1px solid #174A91;
-  border-radius:999px; padding:11px 16px; font-size:13px; font-weight:800; text-align:center; }
-.sidebar-brand { font-size:28px; letter-spacing:-1px; }
-.sidebar-brand .gold { color:#E9AA12 !important; }
-.sidebar-caption { letter-spacing:1.8px; }
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong { color:#174A91 !important; }
-[data-testid="stSidebar"] [role="radiogroup"] { gap:5px; }
-[data-testid="stSidebar"] [role="radiogroup"] label {
-  background:#F7F9FD; border:1px solid #E1E8F2; border-radius:10px; padding:9px 10px;
-}
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
-  background:#EAF2FF; border-color:#8FB5EF; box-shadow:inset 3px 0 #174A91;
-}
-[data-testid="stSidebar"] [data-testid="stButton"] button { min-height:42px !important; }
-[data-testid="stDataFrame"] { box-shadow:0 4px 15px rgba(18,59,112,.04); }
 @media (max-width: 760px) {
  [data-testid="stMainBlockContainer"] { padding-left:1rem; padding-right:1rem; padding-top:2.6rem; }
  h1 { font-size:1.7rem !important; }
  .optiruta-top { padding:17px; }
 }
+
+/* OptiRuta Delivery: azul, oro y blanco */
+:root { color-scheme: light !important; }
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] { background:#FFFFFF !important; color:#17243A !important; }
+[data-testid="stHeader"] { background:rgba(255,255,255,.96) !important; }
+[data-testid="stSidebar"] { background:#FFFFFF !important; border-right:1px solid #DCE4EF !important; }
+.stButton > button, [data-testid="stFormSubmitButton"] > button { border-radius:12px !important; font-weight:750 !important; border:1px solid #0750B8 !important; }
+.stButton > button[kind="primary"], [data-testid="stFormSubmitButton"] > button { background:#0750B8 !important; color:#FFFFFF !important; }
+[data-testid="stMetric"] { background:#FFFFFF; border:1px solid #DCE4EF; border-radius:14px; padding:14px; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -183,11 +160,12 @@ def df(sheet):
 
 
 def customer_picker(prefix):
-    """Busca clientes en la hoja compartida CLIENTES y devuelve el elegido."""
+    """Busca clientes; las claves versionadas permiten limpiar la búsqueda tras guardar."""
     clients = rows("CLIENTES")
+    form_version = st.session_state.get(f"{prefix}_version", 0)
     query = st.text_input(
         "Buscar cliente existente por nombre o teléfono",
-        key=f"{prefix}_client_search",
+        key=f"{prefix}_v{form_version}_client_search",
         placeholder="Escribí un nombre o número para buscar"
     ).strip().lower()
     matches = []
@@ -212,7 +190,7 @@ def customer_picker(prefix):
     selected = st.selectbox(
         "Resultado de búsqueda",
         options,
-        key=f"{prefix}_client_selected"
+        key=f"{prefix}_v{form_version}_client_selected"
     )
     if query and not matches:
         st.caption("No encontramos coincidencias. Podés cargarlo como cliente nuevo.")
@@ -270,16 +248,9 @@ def maps_url(address):
 
 
 def brand_header(subtitle="Sistema de gestión de delivery"):
-    # Cabecera de marca adaptada al panel de PC; conserva las funciones y la API.
-    safe_subtitle = (str(subtitle).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
     st.markdown(
-        '<div class="optiruta-top">'
-        '<div class="optiruta-brand">Opti<span class="gold">Ruta</span>'
-        '<span class="delivery">DELIVERY</span></div>'
-        '<div class="optiruta-slogan">Tu ruta,<br>nuestro compromiso'
-        '<small>Gestión de pedidos y entregas</small></div>'
-        f'<div class="optiruta-tag">{safe_subtitle}</div>'
-        '</div>',
+        '<div class="optiruta-top"><div class="optiruta-brand">OPTIRUTA</div>'
+        f'<div class="optiruta-tag">{subtitle}</div></div>',
         unsafe_allow_html=True
     )
 
@@ -345,7 +316,7 @@ role = str(user.get("Rol", "")).upper()
 uid = user.get("ID_Referencia", "")
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-brand">Opti<span class="gold">Ruta</span></div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-brand">OPTIRUTA</div><div class="sidebar-caption">DELIVERY MANAGEMENT</div>', unsafe_allow_html=True)
     st.markdown('<div class="flag-blue"></div><div class="flag-gold"></div>', unsafe_allow_html=True)
     st.write("")
     st.write(f"**{user.get('Usuario', 'Usuario')}**")
@@ -353,7 +324,7 @@ with st.sidebar:
     if role == "ADMIN":
         st.markdown("**MENÚ PRINCIPAL**")
         st.radio(
-            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
+            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Perfil del conductor", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
             key="admin_section", label_visibility="collapsed"
         )
     st.divider()
@@ -362,7 +333,55 @@ with st.sidebar:
         st.session_state.portal = None
         st.rerun()
 
-# -------------------- ADMINISTRADOR --------------------
+# -------------------- PERFIL DEL CONDUCTOR --------------------
+if role == "ADMIN" and st.session_state.get("admin_section") == "Perfil del conductor":
+    brand_header("Perfil del conductor · Azul y oro")
+    st.title("Perfil del conductor")
+    st.caption("Elegí un conductor, revisá sus datos y guardá su foto de perfil.")
+    drivers = df("CONDUCTORES")
+    if drivers.empty:
+        st.info("No hay conductores registrados en la hoja CONDUCTORES.")
+    else:
+        id_col = "ID_Conductor" if "ID_Conductor" in drivers.columns else drivers.columns[0]
+        name_col = "Nombre_Completo" if "Nombre_Completo" in drivers.columns else id_col
+        choices = {f"{row.get(name_col, row.get(id_col, 'Conductor'))} · {row.get(id_col, '')}": row for _, row in drivers.iterrows()}
+        chosen = st.selectbox("Conductor", list(choices.keys()))
+        record = choices[chosen]
+        col_photo, col_info = st.columns([1, 2])
+        with col_photo:
+            photo_url = str(record.get("Foto_URL", "") or "").strip()
+            if photo_url and photo_url.lower() != "nan":
+                st.image(photo_url, caption="Foto actual", use_container_width=True)
+            else:
+                st.markdown('<div style="padding:28px;border:2px dashed #D5E1F0;border-radius:16px;text-align:center;color:#0750B8">📷<br>Sin foto de perfil</div>', unsafe_allow_html=True)
+            uploaded_photo = st.file_uploader("Nueva foto (JPG, PNG o WEBP)", type=["jpg","jpeg","png","webp"], key="driver_profile_photo")
+            if uploaded_photo and st.button("Guardar foto de perfil", type="primary"):
+                try:
+                    import base64
+                    payload = {
+                        "action": "save_driver_photo",
+                        "api_key": API_KEY,
+                        "user": st.session_state.get("user"),
+                        "ID_Conductor": str(record.get(id_col, "")),
+                        "mime_type": uploaded_photo.type or "image/jpeg",
+                        "image_base64": base64.b64encode(uploaded_photo.getvalue()).decode("ascii")
+                    }
+                    response = requests.post(API_URL, json=payload, timeout=60)
+                    result = response.json()
+                    if result.get("status") == "ok":
+                        st.success("Foto guardada. Actualizá la página para ver el cambio.")
+                        st.rerun()
+                    else:
+                        st.error(result.get("message", "No se pudo guardar la foto."))
+                except Exception as exc:
+                    st.error(f"No se pudo guardar la foto: {exc}")
+        with col_info:
+            st.subheader(str(record.get(name_col, "Conductor")))
+            for field in ["ID_Conductor", "Telefono", "Estado", "Fecha_Ingreso", "Fecha_Baja", "Observaciones", "Foto_URL"]:
+                if field in drivers.columns and str(record.get(field, "")).strip() not in ["", "nan", "None"]:
+                    st.write(f"**{field.replace('_', ' ')}:** {record.get(field)}")
+    st.stop()
+
 if role == "ADMIN":
     brand_header("Panel de administración · Moneda: PYG")
     st.caption("En los formularios, usá Tab para pasar al siguiente campo y Enter dentro de los campos de texto multilínea para escribir otro renglón. En el inicio de sesión, Enter confirma el acceso.")
@@ -701,35 +720,36 @@ elif role == "EMPRENDEDOR":
     st.title("Cargar un pedido")
     st.markdown("### 📦 Información del pedido")
     selected_client, known_clients, client_identity = customer_picker("entrepreneur_order")
-    with st.form("entrepreneur_order", enter_to_submit=False):
-        customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"entrepreneur_customer_name_{client_identity}")
-        phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"entrepreneur_customer_phone_{client_identity}")
-        address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"entrepreneur_customer_address_{client_identity}")
+    order_version = st.session_state.get("entrepreneur_order_version", 0)
+    with st.form(f"entrepreneur_order_v{order_version}", enter_to_submit=False):
+        customer = st.text_input("Nombre del cliente", value=str(selected_client.get("Nombre_Cliente", "") or ""), key=f"entrepreneur_customer_name_v{order_version}_{client_identity}")
+        phone = st.text_input("Teléfono", value=str(selected_client.get("Telefono_Cliente", "") or ""), key=f"entrepreneur_customer_phone_v{order_version}_{client_identity}")
+        address = st.text_input("Dirección de entrega", value=str(selected_client.get("Direccion_Habitual", "") or ""), key=f"entrepreneur_customer_address_v{order_version}_{client_identity}")
         maps_location = st.text_input(
             "Ubicación de Google Maps (pegá el enlace compartido)",
             value=str(selected_client.get("Ubicacion_Google_Maps", "") or ""),
             placeholder="https://maps.app.goo.gl/...",
-            key=f"entrepreneur_customer_maps_{client_identity}"
+            key=f"entrepreneur_customer_maps_v{order_version}_{client_identity}"
         )
         st.caption("En Google Maps: abrí la ubicación del cliente, tocá Compartir y copiá el enlace.")
-        description = st.text_area("Descripción del pedido", height=90)
-        priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"], help="Urgente solo para pedidos que realmente requieren atención inmediata.")
+        description = st.text_area("Descripción del pedido", height=90, key=f"entrepreneur_description_v{order_version}")
+        priority = st.selectbox("Prioridad del pedido", ["Normal", "Alta", "Urgente"], help="Urgente solo para pedidos que realmente requieren atención inmediata.", key=f"entrepreneur_priority_v{order_version}")
         a, b, c = st.columns(3)
-        product = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000)
-        shipping = b.number_input("Costo del envío (Gs.)", min_value=0, step=1000)
-        prepaid = c.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000)
-        method = st.selectbox("Método de pago acordado por WhatsApp", ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"])
+        product = a.number_input("Costo del producto (Gs.)", min_value=0, step=1000, key=f"entrepreneur_product_v{order_version}")
+        shipping = b.number_input("Costo del envío (Gs.)", min_value=0, step=1000, key=f"entrepreneur_shipping_v{order_version}")
+        prepaid = c.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, key=f"entrepreneur_prepaid_v{order_version}")
+        method = st.selectbox("Método de pago acordado por WhatsApp", ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"], key=f"entrepreneur_method_v{order_version}")
         if method == "Efectivo + transferencia":
-            transfer_amount = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000)
+            transfer_amount = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000, key=f"entrepreneur_transfer_amount_v{order_version}")
         elif method in ["Transferencia al emprendedor", "Pagado adelantado"]:
             transfer_amount = int(product + shipping)
         else:
             transfer_amount = 0
         if transfer_amount > 0:
-            transfer_status = st.selectbox("Estado de la transferencia", ["Pendiente de confirmar", "Acreditada al emprendedor"], help="Marcá acreditada únicamente después de verificar el ingreso en la cuenta.")
+            transfer_status = st.selectbox("Estado de la transferencia", ["Pendiente de confirmar", "Acreditada al emprendedor"], help="Marcá acreditada únicamente después de verificar el ingreso en la cuenta.", key=f"entrepreneur_transfer_status_v{order_version}")
         else:
             transfer_status = "No corresponde"
-        payment_note = st.text_area("Instrucciones / acuerdo conversado por WhatsApp", height=75, placeholder="Ej.: el cliente ya transfirió Gs. 20.000 al emprendedor; el resto se cobra en efectivo.")
+        payment_note = st.text_area("Instrucciones / acuerdo conversado por WhatsApp", height=75, placeholder="Ej.: el cliente ya transfirió Gs. 20.000 al emprendedor; el resto se cobra en efectivo.", key=f"entrepreneur_payment_note_v{order_version}")
         st.caption("El conductor no contactará al cliente. Dejá asentado el acuerdo. Solo marcá la transferencia como acreditada cuando ya verificaste el dinero.")
         if st.form_submit_button("ENVIAR PEDIDO", use_container_width=True):
             total = int(product + shipping)
@@ -748,7 +768,11 @@ elif role == "EMPRENDEDOR":
             if customer and address:
                 if not selected_client:
                     remember_customer(known_clients, customer, phone, address, maps_location)
-                save("PEDIDOS", record)
+                result = api("save", sheet="PEDIDOS", record=record)
+                if result:
+                    st.session_state["entrepreneur_order_version"] = order_version + 1
+                    st.success("Pedido guardado correctamente. El formulario quedó limpio para cargar el siguiente.")
+                    st.rerun()
             else:
                 st.error("Completá el nombre y la dirección.")
 
