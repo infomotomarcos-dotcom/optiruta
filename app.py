@@ -1046,7 +1046,7 @@ elif role == "OPERADOR":
         c1,c2,c3 = st.columns(3)
         c1.metric("Trabajos en gestión", f"{len(active)}/3")
         c2.metric("Pedidos disponibles", sum(1 for x in queue if x.get("Tipo_Trabajo")=="PEDIDO"))
-        c3.metric("Comisión activa estimada", money(sum(int(x.get("Comision_Operador") or 0) for x in active)))
+        c3.metric("Comisiones acumuladas", money(int(result.get("commissions", 0) or 0)))
         st.subheader("Mis trabajos activos")
         if active:
             for work in active:
