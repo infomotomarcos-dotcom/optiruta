@@ -377,7 +377,7 @@ if not st.session_state.user:
         st.title("Bienvenido a OptiRuta")
         st.write("Elegí tu perfil para ingresar al espacio de trabajo correspondiente.")
     if not st.session_state.portal:
-        p1, p2, p3 = st.columns(3)
+        p1, p2, p3, p4 = st.columns(4)
         with p1:
             if st.button("🏪  EMPRENDEDORES", use_container_width=True):
                 st.session_state.portal = "EMPRENDEDOR"
@@ -390,12 +390,17 @@ if not st.session_state.user:
             if st.button("⚙️  ADMINISTRADOR", use_container_width=True):
                 st.session_state.portal = "ADMIN"
                 st.rerun()
+        with p4:
+            if st.button("🧭  OPERADORES", use_container_width=True):
+                st.session_state.portal = "OPERADOR"
+                st.rerun()
 
     if st.session_state.portal:
         portal_names = {
             "EMPRENDEDOR": "Acceso de emprendedores",
             "CONDUCTOR": "Acceso de conductores",
-            "ADMIN": "Acceso de administración"
+            "ADMIN": "Acceso de administración",
+            "OPERADOR": "Acceso de operadores"
         }
         brand_header(portal_names[st.session_state.portal])
         st.subheader(portal_names[st.session_state.portal])
@@ -430,11 +435,11 @@ with st.sidebar:
     st.markdown('<div class="flag-blue"></div><div class="flag-gold"></div>', unsafe_allow_html=True)
     st.write("")
     st.write(f"**{user.get('Usuario', 'Usuario')}**")
-    st.caption({"ADMIN":"Administración", "EMPRENDEDOR":"Portal emprendedor", "CONDUCTOR":"Portal conductor"}.get(role, role))
+    st.caption({"ADMIN":"Administración", "EMPRENDEDOR":"Portal emprendedor", "CONDUCTOR":"Portal conductor", "OPERADOR":"Portal operador"}.get(role, role))
     if role == "ADMIN":
         st.markdown("**MENÚ PRINCIPAL**")
         st.radio(
-            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
+            "Secciones", ["Resumen", "Pedidos", "Emprendedores", "Conductores", "Operadores", "Motos", "Caja y movimientos", "Ubicaciones", "Usuarios"],
             key="admin_section", label_visibility="collapsed"
         )
     st.divider()
@@ -759,19 +764,40 @@ if role == "ADMIN":
         else:
             st.info("Todavía no hay ubicaciones registradas.")
 
+    elif section == "Operadores":
+        st.subheader("Registro de operadores")
+        with st.form("operator_create", clear_on_submit=True):
+            name = st.text_input("Nombre completo")
+            phone = st.text_input("Teléfono")
+            notes = st.text_area("Observaciones")
+            if st.form_submit_button("REGISTRAR OPERADOR"):
+                if not name.strip():
+                    st.error("Ingresá el nombre del operador.")
+                else:
+                    saved = api("save", sheet="OPERADORES", record={"ID_Operador":"", "Nombre_Completo":name.strip(), "Telefono":phone.strip(), "Estado":"Activo", "Fecha_Ingreso":datetime.now().date().isoformat(), "Observaciones":notes.strip()})
+                    if saved:
+                        st.success("Operador registrado. ID: " + str(saved.get("id", "")))
+                        st.rerun()
+        operators = df("OPERADORES")
+        if not operators.empty:
+            st.dataframe(operators, use_container_width=True, hide_index=True)
+        else:
+            st.info("Todavía no hay operadores registrados.")
+        st.caption("Después de registrar la ficha, creá su acceso desde Usuarios y vinculalo con el ID_Operador.")
+
     elif section == "Usuarios":
         st.subheader("Crear acceso")
         st.markdown("### 🔑 Datos del nuevo usuario")
         with st.form("user_create"):
             uname = st.text_input("Usuario nuevo")
             pwd = st.text_input("Contraseña inicial", type="password")
-            urole = st.selectbox("Rol", ["EMPRENDEDOR", "CONDUCTOR"])
-            refid = st.text_input("ID de emprendedor o conductor")
+            urole = st.selectbox("Rol", ["EMPRENDEDOR", "CONDUCTOR", "OPERADOR"])
+            refid = st.text_input("ID de emprendedor, conductor u operador")
             if st.form_submit_button("CREAR USUARIO"):
                 result = api("create_user", username=uname, password=pwd, role=urole, reference_id=refid)
                 if result:
                     st.success("Usuario creado.")
-        st.info("Cada usuario debe estar vinculado a un registro activo de emprendedor o conductor.")
+        st.info("Cada usuario debe estar vinculado a un registro activo de su rol. Para OPERADOR, primero cargá su ficha en la hoja OPERADORES.")
 
 # -------------------- EMPRENDEDOR --------------------
 elif role == "EMPRENDEDOR":
@@ -860,44 +886,22 @@ elif role == "EMPRENDEDOR":
                         except (TypeError, ValueError):
                             return 0
 
-                    # Streamlit conserva el estado de los widgets con key entre reruns.
-                    # Al cambiar el pedido, cargar explícitamente todos los valores del nuevo registro.
-                    if st.session_state.get("_entrepreneur_edit_loaded_id") != str(selected_order_id):
-                        st.session_state["_entrepreneur_edit_loaded_id"] = str(selected_order_id)
-                        priorities = ["Normal", "Alta", "Urgente"]
-                        payment_methods = ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"]
-                        transfer_states = ["No corresponde", "Pendiente de confirmar", "Acreditada al emprendedor"]
-                        old_priority = edit_text(original.get("Prioridad", "Normal"))
-                        old_method = edit_text(original.get("Metodo_Pago", "Efectivo al recibir"))
-                        old_transfer_state = edit_text(original.get("Estado_Transferencia_Cliente", "No corresponde"))
-                        st.session_state["edit_customer"] = edit_text(original.get("Nombre_Cliente"))
-                        st.session_state["edit_phone"] = edit_text(original.get("Telefono_Cliente"))
-                        st.session_state["edit_address"] = edit_text(original.get("Direccion_Entrega"))
-                        st.session_state["edit_map"] = edit_text(original.get("Ubicacion_Google_Maps"))
-                        st.session_state["edit_description"] = edit_text(original.get("Descripcion_Pedido"))
-                        st.session_state["edit_priority"] = old_priority if old_priority in priorities else "Normal"
-                        st.session_state["edit_product"] = edit_number(original.get("Costo_Producto"))
-                        st.session_state["edit_shipping"] = edit_number(original.get("Costo_Envio"))
-                        st.session_state["edit_prepaid"] = edit_number(original.get("Monto_Anticipado"))
-                        st.session_state["edit_method"] = old_method if old_method in payment_methods else "Efectivo al recibir"
-                        st.session_state["edit_transfer"] = edit_number(original.get("Monto_Transferencia_Adicional"))
-                        st.session_state["edit_transfer_state"] = old_transfer_state if old_transfer_state in transfer_states else ("Pendiente de confirmar" if edit_number(original.get("Monto_Transferencia_Adicional")) > 0 else "No corresponde")
-                        st.session_state["edit_payment_note"] = edit_text(original.get("Instrucciones_Pago"))
-
                     with st.form("entrepreneur_edit_order_form", enter_to_submit=False):
-                        edit_customer = st.text_input("Nombre del cliente", key="edit_customer")
-                        edit_phone = st.text_input("Teléfono", key="edit_phone")
-                        edit_address = st.text_input("Dirección de entrega", key="edit_address")
-                        edit_map = st.text_input("Ubicación de Google Maps", key="edit_map")
-                        edit_description = st.text_area("Descripción del pedido", height=90, key="edit_description")
+                        edit_customer = st.text_input("Nombre del cliente", value=edit_text(original.get("Nombre_Cliente")), key="edit_customer")
+                        edit_phone = st.text_input("Teléfono", value=edit_text(original.get("Telefono_Cliente")), key="edit_phone")
+                        edit_address = st.text_input("Dirección de entrega", value=edit_text(original.get("Direccion_Entrega")), key="edit_address")
+                        edit_map = st.text_input("Ubicación de Google Maps", value=edit_text(original.get("Ubicacion_Google_Maps")), key="edit_map")
+                        edit_description = st.text_area("Descripción del pedido", value=edit_text(original.get("Descripcion_Pedido")), height=90, key="edit_description")
                         priorities = ["Normal", "Alta", "Urgente"]
-                        edit_priority = st.selectbox("Prioridad", priorities, key="edit_priority")
+                        old_priority = edit_text(original.get("Prioridad", "Normal"))
+                        edit_priority = st.selectbox("Prioridad", priorities, index=priorities.index(old_priority) if old_priority in priorities else 0, key="edit_priority")
                         ea, eb, ec = st.columns(3)
-                        edit_product = ea.number_input("Costo del producto (Gs.)", min_value=0, step=1000, key="edit_product")
-                        edit_shipping = eb.number_input("Costo del envío (Gs.)", min_value=0, step=1000, key="edit_shipping")
-                        edit_prepaid = ec.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, key="edit_prepaid")
+                        edit_product = ea.number_input("Costo del producto (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Costo_Producto")), key="edit_product")
+                        edit_shipping = eb.number_input("Costo del envío (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Costo_Envio")), key="edit_shipping")
+                        edit_prepaid = ec.number_input("Anticipo recibido (Gs.)", min_value=0, step=1000, value=edit_number(original.get("Monto_Anticipado")), key="edit_prepaid")
                         payment_methods = ["Efectivo al recibir", "Transferencia al emprendedor", "Efectivo + transferencia", "Pagado adelantado"]
-                        edit_method = st.selectbox("Método de pago acordado", payment_methods, key="edit_method")
+                        old_method = edit_text(original.get("Metodo_Pago", "Efectivo al recibir"))
+                        edit_method = st.selectbox("Método de pago acordado", payment_methods, index=payment_methods.index(old_method) if old_method in payment_methods else 0, key="edit_method")
                         old_transfer = edit_number(original.get("Monto_Transferencia_Adicional"))
                         if edit_method == "Efectivo + transferencia":
                             edit_transfer = st.number_input("Monto que el cliente transferirá al emprendedor (Gs.)", min_value=0, step=1000, value=old_transfer, key="edit_transfer")
@@ -907,8 +911,10 @@ elif role == "EMPRENDEDOR":
                         else:
                             edit_transfer = 0
                         transfer_states = ["No corresponde", "Pendiente de confirmar", "Acreditada al emprendedor"]
-                        edit_transfer_state = st.selectbox("Estado de la transferencia", transfer_states, key="edit_transfer_state")
-                        edit_payment_note = st.text_area("Instrucciones / acuerdo de pago", height=75, key="edit_payment_note")
+                        old_transfer_state = edit_text(original.get("Estado_Transferencia_Cliente", "No corresponde"))
+                        default_transfer_state = old_transfer_state if old_transfer_state in transfer_states else ("Pendiente de confirmar" if edit_transfer > 0 else "No corresponde")
+                        edit_transfer_state = st.selectbox("Estado de la transferencia", transfer_states, index=transfer_states.index(default_transfer_state), key="edit_transfer_state")
+                        edit_payment_note = st.text_area("Instrucciones / acuerdo de pago", value=edit_text(original.get("Instrucciones_Pago")), height=75, key="edit_payment_note")
                         update_order = st.form_submit_button("GUARDAR CAMBIOS DEL PEDIDO", use_container_width=True)
 
                     if update_order:
@@ -1029,6 +1035,49 @@ elif role == "CONDUCTOR":
                         rec["Fecha_Entrega"] = datetime.now().isoformat(timespec="seconds")
                         rec["Estado_Liquidacion"] = "Pendiente"
                         save("PEDIDOS", rec)
+
+elif role == "OPERADOR":
+    brand_header("Panel de operador · Coordinación de pedidos y levantes")
+    st.caption("Tomá trabajos de la cola compartida. Máximo inicial: 3 trabajos activos.")
+    result = api("operator_queue")
+    if result:
+        active = result.get("active", [])
+        queue = result.get("queue", [])
+        c1,c2,c3 = st.columns(3)
+        c1.metric("Trabajos en gestión", f"{len(active)}/3")
+        c2.metric("Pedidos disponibles", sum(1 for x in queue if x.get("Tipo_Trabajo")=="PEDIDO"))
+        c3.metric("Comisión activa estimada", money(sum(int(x.get("Comision_Operador") or 0) for x in active)))
+        st.subheader("Mis trabajos activos")
+        if active:
+            for work in active:
+                with st.container(border=True):
+                    st.markdown(f"**{work.get('Tipo_Trabajo')} · {work.get('ID_Referencia_Trabajo')}**")
+                    st.caption(f"Prioridad: {work.get('Prioridad','Normal')} · Estado: {work.get('Estado')}")
+                    obs = st.text_area("Observación interna", key=f"op_note_{work.get('ID_Trabajo')}", placeholder="Escribí una observación...")
+                    b1,b2 = st.columns(2)
+                    with b1:
+                        if st.button("Guardar observación", key=f"op_obs_{work.get('ID_Trabajo')}", use_container_width=True):
+                            saved=api("operator_observation", work_id=work.get("ID_Trabajo"), text=obs)
+                            if saved: st.success(saved.get("message","Registrado")); st.rerun()
+                    with b2:
+                        if st.button("Marcar coordinado", key=f"op_done_{work.get('ID_Trabajo')}", use_container_width=True):
+                            done=api("operator_complete", work_id=work.get("ID_Trabajo"), notes=obs)
+                            if done: st.success(done.get("message","Coordinación registrada")); st.rerun()
+        else:
+            st.info("Todavía no tenés trabajos activos.")
+        st.subheader("Pedidos disponibles")
+        if queue:
+            for item in queue:
+                with st.container(border=True):
+                    st.markdown(f"**{item.get('ID_Referencia_Trabajo')} · {item.get('Cliente') or 'Cliente sin nombre'}**")
+                    st.markdown(f"{item.get('Direccion') or 'Sin dirección'}")
+                    st.caption(f"{item.get('Prioridad')} · {item.get('Descripcion') or 'Sin descripción'} · Cargado: {item.get('Fecha_Carga') or 's/d'}")
+                    if st.button("TOMAR PEDIDO", key=f"op_take_{item.get('ID_Referencia_Trabajo')}", disabled=len(active)>=3, use_container_width=True):
+                        taken=api("operator_take", work_type="PEDIDO", reference_id=item.get("ID_Referencia_Trabajo"))
+                        if taken: st.success(taken.get("message","Pedido tomado")); st.rerun()
+        else:
+            st.info("No hay pedidos disponibles en este momento.")
+    if st.button("Actualizar lista", use_container_width=True): st.rerun()
 
 else:
     st.error("Rol no reconocido. Contactá al administrador.")
