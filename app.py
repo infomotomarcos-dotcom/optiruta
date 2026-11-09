@@ -652,7 +652,7 @@ if role == "ADMIN":
 
     elif section == "Caja y movimientos":
         st.subheader("Caja y movimientos")
-        st.markdown("### 🧾 Rendición y cierre de caja del conductor")
+        st.markdown("### 🧾 Rendición de efectivo del conductor")
         drivers_for_cash = rows("CONDUCTORES")
         driver_cash_map = {f"{d.get('Nombre_Completo')} ({d.get('ID_Conductor')})": d.get('ID_Conductor') for d in drivers_for_cash if d.get("Estado", "Activo") == "Activo"}
         delivered = df("PEDIDOS")
@@ -665,100 +665,42 @@ if role == "ADMIN":
         else:
             pending_cash = delivered.copy()
 
-        with st.form("driver_cash_close", enter_to_submit=False):
-            driver_label = st.selectbox("Conductor que rinde", list(driver_cash_map) or [""])
+
+        st.subheader("Iniciar rendición de conductor")
+
+        with st.form("driver_cash_start", enter_to_submit=False):
+            driver_label = st.selectbox(
+                "Conductor que rinde",
+                list(driver_cash_map) or [""]
+            )
             driver_id = driver_cash_map.get(driver_label, "")
-            driver_orders = pending_cash[pending_cash.get("ID_Conductor", pd.Series(index=pending_cash.index, dtype=str)).astype(str) == str(driver_id)] if not pending_cash.empty else pending_cash
-            st.caption("Se muestran pedidos entregados y todavía no incluidos en una liquidación.")
-            if not driver_orders.empty:
-                display_cols = [c for c in ["ID_Pedido", "Nombre_Cliente", "Total_Cobrar", "Metodo_Pago", "Monto_Anticipado", "Monto_Transferencia_Adicional", "Instrucciones_Pago"] if c in driver_orders.columns]
-                st.dataframe(driver_orders[display_cols], use_container_width=True, hide_index=True)
-                def expected_cash(row):
-                    try:
-                        total = float(row.get("Total_Cobrar", 0) or 0)
-                        prepaid_amt = float(row.get("Monto_Anticipado", 0) or 0)
-                        transfer_amt = float(row.get("Monto_Transferencia_Adicional", 0) or 0)
-                        transfer_state = str(row.get("Estado_Transferencia_Cliente", ""))
-                        credited_transfer = transfer_amt if transfer_state == "Acreditada al emprendedor" else 0
-                        return max(0, total - prepaid_amt - credited_transfer)
-                    except Exception:
-                        return 0
-                expected_total = int(driver_orders.apply(expected_cash, axis=1).sum())
+
+            st.caption(
+                "El sistema incluirá los pedidos entregados que todavía "
+                "no fueron incluidos en otra rendición."
+            )
+
+            start_submit = st.form_submit_button(
+                "INICIAR RENDICIÓN",
+                use_container_width=True,
+                disabled=not driver_id
+            )
+
+        if start_submit:
+            staff_token = st.session_state.get("staff_token", "")
+
+            if not staff_token:
+                st.error("No hay una sesión activa de Caja. Cerrá sesión e ingresá nuevamente.")
             else:
-                expected_total = 0
-                st.info("Este conductor no tiene pedidos entregados pendientes de rendición.")
-            st.metric("Efectivo esperado para entregar", money(expected_total))
-            cash_delivered = st.number_input("Efectivo que entrega físicamente el conductor (Gs.)", min_value=0, step=1000, value=int(expected_total))
-            cash_note = st.text_area("Observaciones de caja", height=70, placeholder="Diferencias, faltantes, aclaraciones...")
-            close_submit = st.form_submit_button("REGISTRAR RENDICIÓN Y CERRAR CAJA", use_container_width=True, disabled=(not driver_id or driver_orders.empty))
-        if close_submit:
-            liquidation_id = "LIQ-" + datetime.now().strftime("%Y%m%d%H%M%S")
-            order_ids = driver_orders.get("ID_Pedido", pd.Series(dtype=str)).astype(str).tolist()
-            transfer_summary = []
-            for _, r in driver_orders.iterrows():
-                tr = int(float(r.get("Monto_Transferencia_Adicional", 0) or 0))
-                if tr > 0:
-                    transfer_summary.append({"ID_Pedido": str(r.get("ID_Pedido", "")), "Cliente": str(r.get("Nombre_Cliente", "")), "Transferencia_a_emprendedor": tr, "Estado": str(r.get("Estado_Transferencia_Cliente", "Pendiente de confirmar")), "Instrucciones": str(r.get("Instrucciones_Pago", ""))})
-            # La estructura coincide con las columnas existentes de LIQUIDACIONES.
-            # Total_Pedidos representa productos sin envío; Total_Envios queda separado.
-            total_products = int(pd.to_numeric(driver_orders.get("Costo_Producto", 0), errors="coerce").fillna(0).sum()) if "Costo_Producto" in driver_orders.columns else 0
-            total_shipping = int(pd.to_numeric(driver_orders.get("Costo_Envio", 0), errors="coerce").fillna(0).sum()) if "Costo_Envio" in driver_orders.columns else 0
-            total_transfers = 0
-            total_prepaid = int(pd.to_numeric(driver_orders.get("Monto_Anticipado", 0), errors="coerce").fillna(0).sum()) if "Monto_Anticipado" in driver_orders.columns else 0
-            if "Monto_Transferencia_Adicional" in driver_orders.columns:
-                for _, transfer_row in driver_orders.iterrows():
-                    if str(transfer_row.get("Estado_Transferencia_Cliente", "")) == "Acreditada al emprendedor":
-                        try:
-                            total_transfers += int(float(transfer_row.get("Monto_Transferencia_Adicional", 0) or 0))
-                        except Exception:
-                            pass
-            liquidation = {
-                "ID_Liquidacion": liquidation_id,
-                "Fecha_Hora": datetime.now().isoformat(timespec="seconds"),
-                "Tipo_Liquidacion": "RENDICION_CONDUCTOR",
-                "ID_Conductor": driver_id,
-                "ID_Emprendedor": "",
-                "Pedidos_Incluidos": ",".join(order_ids),
-                "Total_Pedidos": total_products,
-                "Total_Envios": total_shipping,
-                "Total_Efectivo": int(expected_total),
-                "Total_Transferencias": int(total_transfers),
-                "Total_Anticipos": int(total_prepaid),
-                "Pago_Conductor": "",
-                "Pago_Emprendedor": "",
-                "Ganancia_OptiRuta": "",
-                "Total_Rendido": int(cash_delivered),
-                "Diferencia": int(cash_delivered - expected_total),
-                "Estado": "Registrada",
-                "Observaciones": cash_note + (" | Transferencias: " + str(transfer_summary) if transfer_summary else "")
-            }
-            result = api("save", sheet="LIQUIDACIONES", record=liquidation)
-            if result:
-                movement_result = api("movement", record={
-                    "Tipo_Movimiento": "RENDICION_CONDUCTOR",
-                    "ID_Conductor": driver_id,
-                    "Cuenta_Origen": "CONDUCTOR",
-                    "Cuenta_Destino": "OPTIRUTA",
-                    "Metodo_Pago": "Efectivo",
-                    "Monto": int(cash_delivered),
-                    "Efectivo_Esperado": int(expected_total),
-                    "Diferencia_Caja": int(cash_delivered - expected_total),
-                    "ID_Liquidacion": liquidation_id,
-                    "Estado": "Registrado",
-                    "Referencia": ",".join(order_ids),
-                    "Fecha_Hora": datetime.now().isoformat(timespec="seconds"),
-                    "Observaciones": cash_note
-                })
-                if movement_result:
-                    for _, r in driver_orders.iterrows():
-                        rec = r.to_dict()
-                        rec["Estado_Liquidacion"] = "Rendido"
-                        rec["ID_Liquidacion"] = liquidation_id
-                        api("save", sheet="PEDIDOS", record=rec)
-                    st.success(f"Rendición {liquidation_id} registrada. Revisá la diferencia de caja antes de darla por aprobada.")
+                result = api(
+                    "cashout_start",
+                    token=staff_token,
+                    ID_Conductor=driver_id
+                )
+
+                if result:
+                    st.success(result.get("message", "Rendición iniciada."))
                     st.rerun()
-                else:
-                    st.error("La liquidación se guardó, pero no se pudo registrar el movimiento de caja. Revisá antes de volver a intentar para evitar duplicados.")
 
         st.divider()
         st.subheader("Registrar transferencia recibida del emprendedor")
