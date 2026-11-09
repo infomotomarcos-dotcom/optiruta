@@ -409,16 +409,36 @@ if not st.session_state.user:
             username = st.text_input("Usuario")
             password = st.text_input("Contraseña", type="password")
             submitted = st.form_submit_button("INGRESAR", use_container_width=True)
+        
         if submitted:
             result = api("login", username=username.strip(), password=password)
+
             if result and result.get("user"):
                 logged_user = result["user"]
                 actual_role = str(logged_user.get("Rol", "")).upper()
+
                 if actual_role != st.session_state.portal:
                     st.error("Este usuario no corresponde a este tipo de acceso. Elegí el acceso correcto.")
+
                 else:
-                    st.session_state.user = logged_user
-                    st.rerun()
+                    if actual_role == "ADMIN":
+                        staff_auth = api(
+                            "staff_login",
+                            username=username.strip(),
+                            password=password
+                        )
+
+                        if staff_auth and staff_auth.get("token"):
+                            st.session_state.staff_token = staff_auth["token"]
+                            st.session_state.user = logged_user
+                            st.rerun()
+                        else:
+                            st.error("No se pudo iniciar la sesión de Caja.")
+
+                    else:
+                        st.session_state.user = logged_user
+                        st.rerun()
+
             elif result:
                 st.error("Usuario o contraseña incorrectos, o cuenta inactiva.")
         if st.button("← Volver a los accesos"):
