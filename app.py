@@ -737,11 +737,66 @@ if role == "ADMIN":
                         use_container_width=True,
                         hide_index=True
                     )
+
+
+                st.markdown("### 💵 Confirmar recepción de efectivo")
+
+                if pending_rows:
+                    cashout_map = {
+                        f"{r.get('ID_Cierre_Caja')} - Conductor {r.get('ID_Conductor')} - Gs. {r.get('Total_Efectivo_Esperado', 0):,.0f}": r
+                        for r in pending_rows
+                    }
+
+                    with st.form("cashout_confirm_form", enter_to_submit=False):
+                        selected_cashout_label = st.selectbox(
+                            "Seleccionar rendición recibida",
+                            list(cashout_map)
+                        )
+
+                        selected_cashout = cashout_map.get(
+                            selected_cashout_label, {}
+                        )
+
+                        st.write(
+                            "Efectivo esperado: Gs. "
+                            f"{float(selected_cashout.get('Total_Efectivo_Esperado') or 0):,.0f}"
+                        )
+
+                        received_amount = st.number_input(
+                            "Efectivo recibido físicamente (Gs.)",
+                            min_value=0,
+                            step=1000,
+                            value=0
+                        )
+
+                        cashier_observations = st.text_area(
+                            "Observaciones del cajero (opcional)"
+                        )
+
+                        confirm_submit = st.form_submit_button(
+                            "CONFIRMAR RECEPCIÓN",
+                            use_container_width=True
+                        )
+
+                    if confirm_submit:
+                        confirm_result = api(
+                            "cashout_confirm",
+                            token=staff_token,
+                            ID_Cierre_Caja=selected_cashout.get("ID_Cierre_Caja"),
+                            efectivo_recibido=int(received_amount),
+                            observaciones=cashier_observations
+                        )
+
+                        if confirm_result:
+                            st.success(confirm_result.get("message", "Recepción confirmada."))
+                            st.rerun()
                 else:
-                    st.info("No hay rendiciones pendientes de confirmación.")
+                    st.info("No hay rendiciones para confirmar.")
         else:
             st.warning("No hay una sesión activa de Caja.")
+
         st.divider()
+
         st.subheader("Registrar transferencia recibida del emprendedor")
         ems = rows("EMPRENDEDORES")
         emmap = {f"{e.get('Nombre_Comercial')} ({e.get('ID_Emprendedor')})": e.get("ID_Emprendedor") for e in ems}
