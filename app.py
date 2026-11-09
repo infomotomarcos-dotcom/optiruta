@@ -701,7 +701,46 @@ if role == "ADMIN":
                 if result:
                     st.success(result.get("message", "Rendición iniciada."))
                     st.rerun()
+        st.markdown("### 📋 Rendiciones pendientes de confirmación")
 
+        staff_token = st.session_state.get("staff_token", "")
+
+        if staff_token:
+            pending_result = api(
+                "cashout_pending",
+                token=staff_token
+            )
+
+            if pending_result is not None:
+                pending_rows = pending_result.get("rows", [])
+
+                if pending_rows:
+                    pending_df = pd.DataFrame(pending_rows)
+
+                    columns_to_show = [
+                        "ID_Cierre_Caja",
+                        "ID_Conductor",
+                        "ID_Moto",
+                        "Fecha_Solicitud",
+                        "Pedidos_Entregados",
+                        "Total_Efectivo_Esperado",
+                        "Iniciado_Por"
+                    ]
+
+                    visible_columns = [
+                        col for col in columns_to_show
+                        if col in pending_df.columns
+                    ]
+
+                    st.dataframe(
+                        pending_df[visible_columns],
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                else:
+                    st.info("No hay rendiciones pendientes de confirmación.")
+        else:
+            st.warning("No hay una sesión activa de Caja.")
         st.divider()
         st.subheader("Registrar transferencia recibida del emprendedor")
         ems = rows("EMPRENDEDORES")
