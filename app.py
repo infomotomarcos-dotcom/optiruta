@@ -795,6 +795,76 @@ if role == "ADMIN":
         else:
             st.warning("No hay una sesión activa de Caja.")
 
+        
+        st.markdown("### 🔒 Cierre definitivo del turno")
+
+        sessions_for_close = rows("SESIONES_CONDUCTOR")
+
+        active_sessions = [
+            s for s in sessions_for_close
+            if str(s.get("Rol", "CONDUCTOR")).upper() == "CONDUCTOR"
+            and str(s.get("Estado", "")).upper() in ["ACTIVA", "PENDIENTE_CAJA"]
+        ]
+
+        if active_sessions:
+            session_map = {
+                (
+                    f"Conductor: {s.get('ID_Conductor')} | "
+                    f"Moto: {s.get('ID_Moto')} | "
+                    f"Sesión: {s.get('ID_Sesion')}"
+                ): s
+                for s in active_sessions
+            }
+
+            with st.form("cashout_close_session_form", enter_to_submit=False):
+                selected_session_label = st.selectbox(
+                    "Seleccionar turno del conductor",
+                    list(session_map.keys())
+                )
+
+                selected_session = session_map.get(
+                    selected_session_label, {}
+                )
+
+                st.warning(
+                    "El cierre es definitivo. Antes de cerrarlo, "
+                    "el sistema verificará que no haya rendiciones pendientes "
+                    "ni pedidos entregados sin rendición confirmada."
+                )
+
+                confirm_close = st.checkbox(
+                    "Confirmo que deseo cerrar definitivamente este turno."
+                )
+
+                close_submit = st.form_submit_button(
+                    "CERRAR TURNO DEFINITIVAMENTE",
+                    use_container_width=True,
+                    disabled=not confirm_close
+                )
+
+            if close_submit:
+                staff_token = st.session_state.get("staff_token", "")
+
+                if not staff_token:
+                    st.error("No hay una sesión activa de Caja. Ingresá nuevamente.")
+                else:
+                    close_result = api(
+                        "cashout_close_session",
+                        token=staff_token,
+                        ID_Sesion=selected_session.get("ID_Sesion")
+                    )
+
+                    if close_result:
+                        st.success(
+                            close_result.get(
+                                "message",
+                                "Turno cerrado definitivamente."
+                            )
+                        )
+                        st.rerun()
+        else:
+            st.info("No hay turnos de conductores activos para cerrar.")
+
         st.divider()
 
         st.subheader("Registrar transferencia recibida del emprendedor")
