@@ -956,26 +956,30 @@ elif role == "EMPRENDEDOR":
 
         st.markdown("""
         <style>
+        div.st-key-btn_enviar button[kind="secondary"],
+        div.st-key-btn_levantar button[kind="secondary"],
         div.st-key-btn_enviar button,
         div.st-key-btn_levantar button {
-            color: white !important;
             min-height: 76px !important;
             border-radius: 14px !important;
         }
 
         div.st-key-btn_enviar button {
-            background-color: #0750B8 !important;
+            background: #0750B8 !important;
             border: 2px solid #0750B8 !important;
         }
 
         div.st-key-btn_levantar button {
-            background-color: #E9A817 !important;
+            background: #E9A817 !important;
             border: 2px solid #E9A817 !important;
         }
 
-        div.st-key-btn_enviar button *,
-        div.st-key-btn_levantar button * {
-            color: white !important;
+        div.st-key-btn_enviar button p,
+        div.st-key-btn_levantar button p,
+        div.st-key-btn_enviar button span,
+        div.st-key-btn_levantar button span {
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
             font-size: 21px !important;
             font-weight: 800 !important;
         }
