@@ -966,7 +966,7 @@ elif role == "EMPRENDEDOR":
 
         div.st-key-btn_levantar button {
             background-color: #E9A817 !important;
-            color: #17345C !important;
+            color: white !important;
             border: 2px solid #E9A817 !important;
             min-height: 76px !important;
             border-radius: 14px !important;
