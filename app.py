@@ -1007,6 +1007,7 @@ elif role == "EMPRENDEDOR":
                 transfer_amount = int(product + shipping)
             else:
                 transfer_amount = 0
+
             if transfer_amount > 0:
                 transfer_status = st.selectbox("Estado de la transferencia", ["Pendiente de confirmar", "Acreditada al emprendedor"], help="Marcá acreditada únicamente después de verificar el ingreso en la cuenta.")
             else:
@@ -1016,7 +1017,8 @@ elif role == "EMPRENDEDOR":
 
             st.caption("El conductor no contactará al cliente. Dejá asentado el acuerdo. Solo marcá la transferencia como acreditada cuando ya verificaste el dinero.")
 
-                        if st.form_submit_button("ENVIAR PEDIDO", use_container_width=True):
+            if st.form_submit_button("ENVIAR PEDIDO", use_container_width=True):
+
                 total = int(product + shipping)
                 record = {
                     "ID_Pedido": "", "Fecha_Carga": datetime.now().isoformat(timespec="seconds"),
